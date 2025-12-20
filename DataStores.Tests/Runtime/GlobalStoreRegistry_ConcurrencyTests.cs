@@ -115,7 +115,7 @@ public class GlobalStoreRegistry_ConcurrencyTests
     }
 
     [Fact]
-    public void ConcurrentRegisterAndResolve_Should_NotDeadlock()
+    public async Task ConcurrentRegisterAndResolve_Should_NotDeadlock()
     {
         // Arrange
         var registry = new GlobalStoreRegistry();
@@ -157,7 +157,7 @@ public class GlobalStoreRegistry_ConcurrencyTests
             }
         }));
 
-        Task.WaitAll(tasks.ToArray(), TimeSpan.FromSeconds(6));
+        await Task.WhenAll(tasks).WaitAsync(TimeSpan.FromSeconds(6));
 
         // Assert - No deadlock occurred (completed within timeout)
         Assert.True(tasks.All(t => t.IsCompleted));

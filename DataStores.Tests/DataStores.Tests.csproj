@@ -23,12 +23,17 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DataStores\DataStores.csproj" />
+    <ProjectReference Include="..\TestHelper.DataStores\TestHelper.DataStores.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <Reference Include="TestHelper">
       <HintPath>C:\Users\schro\Documents\Visual Studio 2022\Projects\CSharp\Projekte\TestHelper\bin\Debug\net8.0\TestHelper.dll</HintPath>
     </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Builders\" />
   </ItemGroup>
 
 </Project>

@@ -3,6 +3,7 @@ using DataStores.Runtime;
 
 namespace DataStores.Tests;
 
+[Trait("Category", "Unit")]
 public class InMemoryDataStoreTests
 {
     private class TestItem

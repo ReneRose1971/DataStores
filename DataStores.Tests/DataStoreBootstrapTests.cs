@@ -3,9 +3,11 @@ using DataStores.Bootstrap;
 using DataStores.Persistence;
 using DataStores.Runtime;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelper.DataStores.Persistence;
 
 namespace DataStores.Tests;
 
+[Trait("Category", "Unit")]
 public class DataStoreBootstrapTests
 {
     private class TestItem

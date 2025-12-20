@@ -38,7 +38,7 @@ public class InMemoryDataStore_EdgeCaseTests
 
         // Assert
         Assert.Equal(0, eventCount);
-        Assert.Equal(0, store.Items.Count);
+        Assert.Empty(store.Items);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public class InMemoryDataStore_EdgeCaseTests
 
         // Act & Assert
         store.Clear();
-        Assert.Equal(0, store.Items.Count);
+        Assert.Empty(store.Items);
     }
 
     [Fact]

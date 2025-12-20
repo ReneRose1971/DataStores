@@ -9,7 +9,7 @@ namespace DataStores.Tests.Runtime;
 public class InMemoryDataStore_ThreadSafetyTests
 {
     [Fact]
-    public void Add_Should_BeThreadSafe()
+    public async Task Add_Should_BeThreadSafe()
     {
         // Arrange
         var store = new InMemoryDataStore<TestItem>();
@@ -22,14 +22,14 @@ public class InMemoryDataStore_ThreadSafetyTests
             tasks.Add(Task.Run(() => store.Add(new TestItem { Id = id, Name = $"Item{id}" })));
         }
 
-        Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert
         Assert.Equal(100, store.Items.Count);
     }
 
     [Fact]
-    public void Remove_Should_BeThreadSafe()
+    public async Task Remove_Should_BeThreadSafe()
     {
         // Arrange
         var store = new InMemoryDataStore<TestItem>();
@@ -51,14 +51,14 @@ public class InMemoryDataStore_ThreadSafetyTests
             tasks.Add(Task.Run(() => store.Remove(itemToRemove)));
         }
 
-        Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert
-        Assert.Equal(0, store.Items.Count);
+        Assert.Empty(store.Items);
     }
 
     [Fact]
-    public void MixedOperations_Should_BeThreadSafe()
+    public async Task MixedOperations_Should_BeThreadSafe()
     {
         // Arrange
         var store = new InMemoryDataStore<TestItem>();
@@ -76,14 +76,14 @@ public class InMemoryDataStore_ThreadSafetyTests
             tasks.Add(Task.Run(() => { var _ = store.Contains(new TestItem { Id = id }); }));
         }
 
-        Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert - All adds completed successfully
         Assert.Equal(50, store.Items.Count);
     }
 
     [Fact]
-    public void Items_Snapshot_Should_NotThrow_DuringModification()
+    public async Task Items_Snapshot_Should_NotThrow_DuringModification()
     {
         // Arrange
         var store = new InMemoryDataStore<TestItem>();
@@ -126,14 +126,14 @@ public class InMemoryDataStore_ThreadSafetyTests
             }
         }
 
-        Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert - No exceptions occurred
         Assert.Empty(exceptions);
     }
 
     [Fact]
-    public void AddRange_Should_BeThreadSafe()
+    public async Task AddRange_Should_BeThreadSafe()
     {
         // Arrange
         var store = new InMemoryDataStore<TestItem>();
@@ -152,14 +152,14 @@ public class InMemoryDataStore_ThreadSafetyTests
             }));
         }
 
-        Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert
         Assert.Equal(100, store.Items.Count);
     }
 
     [Fact]
-    public void Clear_Should_BeThreadSafe_WithConcurrentReads()
+    public async Task Clear_Should_BeThreadSafe_WithConcurrentReads()
     {
         // Arrange
         var store = new InMemoryDataStore<TestItem>();
@@ -194,11 +194,11 @@ public class InMemoryDataStore_ThreadSafetyTests
             }));
         }
 
-        Task.WaitAll(tasks.ToArray());
+        await Task.WhenAll(tasks);
 
         // Assert
         Assert.Empty(exceptions);
-        Assert.Equal(0, store.Items.Count);
+        Assert.Empty(store.Items);
     }
 
     private class TestItem

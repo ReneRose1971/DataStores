@@ -109,9 +109,11 @@ public class InMemoryDataStore_ComparerTests
     [Fact]
     public void Comparer_Should_HandleNullGracefully()
     {
-        // Arrange
+        // Arrange - Using notnull attribute to satisfy constraint
         var comparer = new NullSafeComparer();
+#pragma warning disable CS8634 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'class' constraint.
         var store = new InMemoryDataStore<TestItem?>(comparer);
+#pragma warning restore CS8634
         
         store.Add(null);
         store.Add(new TestItem { Id = 1, Name = "A" });

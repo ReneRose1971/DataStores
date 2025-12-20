@@ -314,7 +314,7 @@ public class Performance_StressTests
     }
 
     [Fact]
-    public void LongRunning_StabilityTest()
+    public async Task LongRunning_StabilityTest()
     {
         // Arrange
         var store = new InMemoryDataStore<TestItem>();
@@ -353,7 +353,7 @@ public class Performance_StressTests
             }
         });
 
-        task.Wait();
+        await task;
 
         // Assert
         Assert.Empty(exceptions);

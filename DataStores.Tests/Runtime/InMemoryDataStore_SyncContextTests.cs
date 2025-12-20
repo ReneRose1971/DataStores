@@ -64,7 +64,7 @@ public class InMemoryDataStore_SyncContextTests : IDisposable
         // Act & Assert - Should complete without deadlock
         using var scope = SynchronizationContextScope.None();
         store.Add(new TestItem { Id = 1, Name = "Test" });
-        Assert.Equal(1, store.Items.Count);
+        Assert.Single(store.Items);
     }
 
     [Fact]

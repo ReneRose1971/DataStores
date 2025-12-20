@@ -1,8 +1,10 @@
 using DataStores.Persistence;
 using DataStores.Runtime;
+using TestHelper.DataStores.Persistence;
 
 namespace DataStores.Tests;
 
+[Trait("Category", "Unit")]
 public class PersistentStoreDecoratorTests
 {
     private class TestItem

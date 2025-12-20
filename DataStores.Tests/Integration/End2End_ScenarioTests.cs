@@ -3,9 +3,8 @@ using DataStores.Bootstrap;
 using DataStores.Persistence;
 using DataStores.Relations;
 using DataStores.Runtime;
-using DataStores.Tests.Fakes;
 using Microsoft.Extensions.DependencyInjection;
-using Xunit;
+using TestHelper.DataStores.Persistence;
 
 namespace DataStores.Tests.Integration;
 
