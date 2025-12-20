@@ -1,13 +1,13 @@
 # Beitragen zu DataStores
 
-Vielen Dank für Ihr Interesse, zu DataStores beizutragen! Wir freuen uns über jeden Beitrag zur Verbesserung dieser Bibliothek.
+Vielen Dank fÃ¼r Ihr Interesse, zu DataStores beizutragen! Wir freuen uns Ã¼ber jeden Beitrag zur Verbesserung dieser Bibliothek.
 
-## ?? Inhaltsverzeichnis
+## Inhaltsverzeichnis
 
 - [Code of Conduct](#code-of-conduct)
 - [Wie kann ich beitragen?](#wie-kann-ich-beitragen)
 - [Entwicklungsumgebung einrichten](#entwicklungsumgebung-einrichten)
-- [Prozess für Pull Requests](#prozess-für-pull-requests)
+- [Prozess fÃ¼r Pull Requests](#prozess-fÃ¼r-pull-requests)
 - [Coding Guidelines](#coding-guidelines)
 - [Commit-Nachrichten](#commit-nachrichten)
 - [Tests](#tests)
@@ -21,56 +21,56 @@ Dieses Projekt folgt dem [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.
 
 ### Bugs melden
 
-Bugs werden als [GitHub Issues](https://github.com/[username]/DataStores/issues) getrackt. Erstellen Sie ein Issue und geben Sie folgende Informationen an:
+Bugs werden als [GitHub Issues](https://github.com/ReneRose1971/DataStores/issues) getrackt. Erstellen Sie ein Issue und geben Sie folgende Informationen an:
 
-- **Aussagekräftiger Titel** - Verwenden Sie einen klaren und beschreibenden Titel
+- **AussagekrÃ¤ftiger Titel** - Verwenden Sie einen klaren und beschreibenden Titel
 - **Schritte zur Reproduktion** - Detaillierte Schritte, um das Problem nachzustellen
 - **Erwartetes Verhalten** - Was sollte passieren
-- **Tatsächliches Verhalten** - Was passiert stattdessen
+- **TatsÃ¤chliches Verhalten** - Was passiert stattdessen
 - **Umgebung** - .NET Version, Betriebssystem, etc.
-- **Zusätzlicher Kontext** - Screenshots, Logs, etc.
+- **ZusÃ¤tzlicher Kontext** - Screenshots, Logs, etc.
 
-**Vorlage für Bug-Reports:**
+**Vorlage fÃ¼r Bug-Reports:**
 ```markdown
 ## Beschreibung
-[Klare und präzise Beschreibung des Bugs]
+[Klare und prÃ¤zise Beschreibung des Bugs]
 
 ## Schritte zur Reproduktion
 1. Erstelle einen Store mit '...'
-2. Führe Operation '...' aus
+2. FÃ¼hre Operation '...' aus
 3. Beobachte Fehler
 
 ## Erwartetes Verhalten
 [Was sollte passieren]
 
-## Tatsächliches Verhalten
-[Was passiert tatsächlich]
+## TatsÃ¤chliches Verhalten
+[Was passiert tatsÃ¤chlich]
 
 ## Umgebung
 - DataStores Version: [z.B. 1.0.0]
 - .NET Version: [z.B. .NET 8.0]
 - OS: [z.B. Windows 11, Ubuntu 22.04]
 
-## Zusätzlicher Kontext
+## ZusÃ¤tzlicher Kontext
 [Logs, Screenshots, etc.]
 ```
 
 ### Features vorschlagen
 
-Feature-Vorschläge werden ebenfalls als [GitHub Issues](https://github.com/[username]/DataStores/issues) getrackt.
+Feature-VorschlÃ¤ge werden ebenfalls als [GitHub Issues](https://github.com/ReneRose1971/DataStores/issues) getrackt.
 
-**Vorlage für Feature-Requests:**
+**Vorlage fÃ¼r Feature-Requests:**
 ```markdown
 ## Problem
-[Welches Problem löst dieses Feature?]
+[Welches Problem lÃ¶st dieses Feature?]
 
-## Vorgeschlagene Lösung
-[Wie könnte das Feature implementiert werden?]
+## Vorgeschlagene LÃ¶sung
+[Wie kÃ¶nnte das Feature implementiert werden?]
 
 ## Alternativen
-[Welche alternativen Lösungen wurden erwogen?]
+[Welche alternativen LÃ¶sungen wurden erwogen?]
 
-## Zusätzlicher Kontext
+## ZusÃ¤tzlicher Kontext
 [Weitere Informationen, Beispiele, etc.]
 ```
 
@@ -78,15 +78,15 @@ Feature-Vorschläge werden ebenfalls als [GitHub Issues](https://github.com/[user
 
 1. Forken Sie das Repository
 2. Erstellen Sie einen Feature-Branch (`git checkout -b feature/AmazingFeature`)
-3. Committen Sie Ihre Änderungen (`git commit -m 'Add some AmazingFeature'`)
+3. Committen Sie Ihre Ã„nderungen (`git commit -m 'Add some AmazingFeature'`)
 4. Pushen Sie zum Branch (`git push origin feature/AmazingFeature`)
-5. Öffnen Sie einen Pull Request
+5. Ã–ffnen Sie einen Pull Request
 
 ## Entwicklungsumgebung einrichten
 
 ### Voraussetzungen
 
-- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) oder höher
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) oder hÃ¶her
 - IDE Ihrer Wahl:
   - [Visual Studio 2022](https://visualstudio.microsoft.com/) (17.8+)
   - [Visual Studio Code](https://code.visualstudio.com/) mit C# Extension
@@ -96,7 +96,7 @@ Feature-Vorschläge werden ebenfalls als [GitHub Issues](https://github.com/[user
 
 ```bash
 # Repository klonen
-git clone https://github.com/[username]/DataStores.git
+git clone https://github.com/ReneRose1971/DataStores.git
 cd DataStores
 
 # Dependencies installieren
@@ -105,7 +105,7 @@ dotnet restore
 # Projekt bauen
 dotnet build
 
-# Tests ausführen
+# Tests ausfÃ¼hren
 dotnet test
 
 # Coverage Report erstellen
@@ -116,29 +116,29 @@ dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
 
 ```
 DataStores/
-??? DataStores/              # Hauptbibliothek
-?   ??? Abstractions/        # Interfaces und Basisklassen
-?   ??? Runtime/             # Implementierungen
-?   ??? Persistence/         # Persistierung
-?   ??? Relations/           # Beziehungen
-?   ??? Bootstrap/           # Initialisierung
-?   ??? Docs/                # Dokumentation
-?
-??? DataStores.Tests/        # Tests
-    ??? Runtime/
-    ??? Persistence/
-    ??? Relations/
-    ??? Integration/
-    ??? Performance/
+â”œâ”€â”€ DataStores/              # Hauptbibliothek
+â”‚   â”œâ”€â”€ Abstractions/        # Interfaces und Basisklassen
+â”‚   â”œâ”€â”€ Runtime/             # Implementierungen
+â”‚   â”œâ”€â”€ Persistence/         # Persistierung
+â”‚   â”œâ”€â”€ Relations/           # Beziehungen
+â”‚   â”œâ”€â”€ Bootstrap/           # Initialisierung
+â”‚   â””â”€â”€ Docs/                # Dokumentation
+â”‚
+â””â”€â”€ DataStores.Tests/        # Tests
+    â”œâ”€â”€ Runtime/
+    â”œâ”€â”€ Persistence/
+    â”œâ”€â”€ Relations/
+    â”œâ”€â”€ Integration/
+    â””â”€â”€ Performance/
 ```
 
-## Prozess für Pull Requests
+## Prozess fÃ¼r Pull Requests
 
 ### Vor dem PR
 
 - [ ] Code folgt den [Coding Guidelines](#coding-guidelines)
 - [ ] Alle Tests laufen durch (`dotnet test`)
-- [ ] Neue Tests für neue Funktionalität hinzugefügt
+- [ ] Neue Tests fÃ¼r neue FunktionalitÃ¤t hinzugefÃ¼gt
 - [ ] Dokumentation aktualisiert (XML-Kommentare, README, etc.)
 - [ ] CHANGELOG.md aktualisiert
 - [ ] Code Coverage nicht verringert
@@ -147,24 +147,24 @@ DataStores/
 
 ```markdown
 ## Beschreibung
-[Was ändert dieser PR?]
+[Was Ã¤ndert dieser PR?]
 
 ## Motivation und Kontext
-[Warum ist diese Änderung notwendig?]
+[Warum ist diese Ã„nderung notwendig?]
 
-## Typ der Änderung
+## Typ der Ã„nderung
 - [ ] Bug Fix (nicht-breaking change)
 - [ ] Neues Feature (nicht-breaking change)
-- [ ] Breaking Change (fix oder feature, das existierende Funktionalität bricht)
+- [ ] Breaking Change (fix oder feature, das existierende FunktionalitÃ¤t bricht)
 - [ ] Dokumentation
 
 ## Checkliste
 - [ ] Code folgt Coding Guidelines
-- [ ] Selbst-Review durchgeführt
-- [ ] Kommentare hinzugefügt, besonders in komplexen Bereichen
+- [ ] Selbst-Review durchgefÃ¼hrt
+- [ ] Kommentare hinzugefÃ¼gt, besonders in komplexen Bereichen
 - [ ] Dokumentation aktualisiert
 - [ ] Keine neuen Warnings
-- [ ] Tests hinzugefügt
+- [ ] Tests hinzugefÃ¼gt
 - [ ] Alle Tests laufen durch
 - [ ] CHANGELOG.md aktualisiert
 
@@ -172,14 +172,14 @@ DataStores/
 [Wie wurde getestet?]
 
 ## Screenshots (falls relevant)
-[Screenshots hinzufügen]
+[Screenshots hinzufÃ¼gen]
 ```
 
 ### Review-Prozess
 
 1. Mindestens ein Maintainer muss den PR reviewen
-2. Alle Kommentare müssen adressiert werden
-3. CI-Pipeline muss grün sein
+2. Alle Kommentare mÃ¼ssen adressiert werden
+3. CI-Pipeline muss grÃ¼n sein
 4. Nach Approval: Squash & Merge
 
 ## Coding Guidelines
@@ -191,22 +191,22 @@ Wir folgen den [Microsoft C# Coding Conventions](https://docs.microsoft.com/en-u
 **Wichtigste Regeln:**
 
 ```csharp
-// ? PascalCase für öffentliche Member
+// OK: PascalCase fÃ¼r Ã¶ffentliche Member
 public class DataStoreRegistry { }
 public void RegisterGlobal<T>() { }
 
-// ? camelCase für private Fields mit Underscore
+// OK: camelCase fÃ¼r private Fields mit Underscore
 private readonly IDataStore<T> _innerStore;
 
-// ? Interfaces beginnen mit 'I'
+// OK: Interfaces beginnen mit 'I'
 public interface IDataStore<T> { }
 
-// ? Async-Methoden enden mit 'Async'
+// OK: Async-Methoden enden mit 'Async'
 public async Task InitializeAsync() { }
 
-// ? Vollständige XML-Kommentare auf Deutsch
+// OK: VollstÃ¤ndige XML-Kommentare auf Deutsch
 /// <summary>
-/// Registriert einen globalen Datenspeicher für Typ T.
+/// Registriert einen globalen Datenspeicher fÃ¼r Typ T.
 /// </summary>
 /// <param name="store">Der zu registrierende Datenspeicher.</param>
 public void RegisterGlobal<T>(IDataStore<T> store) { }
@@ -215,23 +215,23 @@ public void RegisterGlobal<T>(IDataStore<T> store) { }
 ### Code-Stil
 
 ```csharp
-// ? Verwende var, wenn Typ offensichtlich
+// OK: Verwende var, wenn Typ offensichtlich
 var store = new InMemoryDataStore<Product>();
 
-// ? Expliziter Typ, wenn nicht offensichtlich
+// OK: Expliziter Typ, wenn nicht offensichtlich
 IDataStore<Product> store = GetStore();
 
-// ? Expression-bodied Members für einfache Getter
+// OK: Expression-bodied Members fÃ¼r einfache Getter
 public IReadOnlyList<T> Items => _items.ToList();
 
-// ? Null-Checks
+// OK: Null-Checks
 if (store == null)
     throw new ArgumentNullException(nameof(store));
 
 // oder
 var items = store?.Items ?? Array.Empty<T>();
 
-// ? LINQ für Sammlungen
+// OK: LINQ fÃ¼r Sammlungen
 var activeProducts = products.Where(p => p.IsActive).ToList();
 ```
 
@@ -239,9 +239,9 @@ var activeProducts = products.Where(p => p.IsActive).ToList();
 
 1. **SOLID-Prinzipien** befolgen
 2. **Dependency Injection** verwenden
-3. **Interfaces über Implementierungen** bevorzugen
-4. **Thread-Sicherheit** garantieren wo nötig
-5. **Immutability** wo möglich
+3. **Interfaces Ã¼ber Implementierungen** bevorzugen
+4. **Thread-Sicherheit** garantieren wo nÃ¶tig
+5. **Immutability** wo mÃ¶glich
 6. **Explizite Invarianten** dokumentieren
 
 ## Commit-Nachrichten
@@ -264,7 +264,7 @@ Wir folgen [Conventional Commits](https://www.conventionalcommits.org/):
 - `style`: Code-Formatierung
 - `refactor`: Code-Refactoring
 - `perf`: Performance-Verbesserung
-- `test`: Tests hinzufügen/ändern
+- `test`: Tests hinzufÃ¼gen/Ã¤ndern
 - `chore`: Build-Prozess, Tools, etc.
 
 ### Beispiele
@@ -294,7 +294,7 @@ BREAKING CHANGE: Items now returns IReadOnlyList instead of IEnumerable
 
 ```csharp
 /// <summary>
-/// Tests für [Klasse/Feature].
+/// Tests fÃ¼r [Klasse/Feature].
 /// </summary>
 public class MyFeatureTests
 {
@@ -318,17 +318,17 @@ public class MyFeatureTests
 
 - **Unit Tests**: Isolierte Tests einzelner Komponenten
 - **Integration Tests**: Tests von Komponenten-Interaktionen
-- **Thread-Safety Tests**: Nebenläufigkeits-Tests
+- **Thread-Safety Tests**: NebenlÃ¤ufigkeits-Tests
 - **Performance Tests**: Stress-Tests und Benchmarks
 
 ### Test Coverage
 
 - **Minimum**: 80% Code Coverage
 - **Ziel**: 90%+ Code Coverage
-- Alle öffentlichen APIs müssen getestet sein
-- Kritische Pfade müssen 100% abgedeckt sein
+- Alle Ã¶ffentlichen APIs mÃ¼ssen getestet sein
+- Kritische Pfade mÃ¼ssen 100% abgedeckt sein
 
-### Tests ausführen
+### Tests ausfÃ¼hren
 
 ```bash
 # Alle Tests
@@ -348,19 +348,19 @@ dotnet test --filter "FullyQualifiedName~MySpecificTest"
 
 ### XML-Kommentare
 
-**Alle öffentlichen APIs MÜSSEN vollständige XML-Kommentare auf Deutsch haben:**
+**Alle Ã¶ffentlichen APIs MÃœSSEN vollstÃ¤ndige XML-Kommentare auf Deutsch haben:**
 
 ```csharp
 /// <summary>
-/// Fügt ein Element zum Store hinzu.
+/// FÃ¼gt ein Element zum Store hinzu.
 /// </summary>
-/// <param name="item">Das hinzuzufügende Element.</param>
+/// <param name="item">Das hinzuzufÃ¼gende Element.</param>
 /// <exception cref="ArgumentNullException">
-/// Wird ausgelöst, wenn <paramref name="item"/> null ist.
+/// Wird ausgelÃ¶st, wenn <paramref name="item"/> null ist.
 /// </exception>
 /// <remarks>
-/// Diese Methode ist thread-sicher. Das Element wird zur Liste hinzugefügt
-/// und ein <see cref="Changed"/> Event wird ausgelöst.
+/// Diese Methode ist thread-sicher. Das Element wird zur Liste hinzugefÃ¼gt
+/// und ein <see cref="Changed"/> Event wird ausgelÃ¶st.
 /// </remarks>
 /// <example>
 /// <code>
@@ -376,8 +376,8 @@ public void Add(T item)
 
 ### Markdown-Dokumentation
 
-- **README.md**: Übersicht und Schnellstart aktualisieren
-- **CHANGELOG.md**: Alle Änderungen dokumentieren
+- **README.md**: Ãœbersicht und Schnellstart aktualisieren
+- **CHANGELOG.md**: Alle Ã„nderungen dokumentieren
 - **Docs/**: Detaillierte Guides bei Bedarf erweitern
 
 ### Beispiele
@@ -389,10 +389,10 @@ Neue Features sollten mit praktischen Beispielen dokumentiert werden:
 
 ### Verwendung
 
-?```csharp
+```csharp
 var example = new Example();
 example.DoSomething();
-?```
+```
 
 ### Wann verwenden?
 
@@ -404,14 +404,14 @@ example.DoSomething();
 
 Wenn Sie Fragen haben:
 
-- Öffnen Sie ein [GitHub Issue](https://github.com/[username]/DataStores/issues)
+- Ã–ffnen Sie ein [GitHub Issue](https://github.com/ReneRose1971/DataStores/issues)
 - Kontaktieren Sie die Maintainer
-- Schauen Sie in die [Diskussionen](https://github.com/[username]/DataStores/discussions)
+- Schauen Sie in die [Diskussionen](https://github.com/ReneRose1971/DataStores/discussions)
 
 ## Lizenz
 
-Durch Ihren Beitrag stimmen Sie zu, dass Ihre Beiträge unter der [MIT License](LICENSE) lizenziert werden.
+Durch Ihren Beitrag stimmen Sie zu, dass Ihre BeitrÃ¤ge unter der [MIT License](LICENSE) lizenziert werden.
 
 ---
 
-**Vielen Dank für Ihren Beitrag! ??**
+**Vielen Dank fÃ¼r Ihren Beitrag!**

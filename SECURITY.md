@@ -1,73 +1,71 @@
 # Sicherheitsrichtlinie
 
-## Unterstützte Versionen
+## UnterstÃ¼tzte Versionen
 
-Wir unterstützen derzeit folgende Versionen mit Sicherheitsupdates:
+Wir unterstÃ¼tzen derzeit folgende Versionen mit Sicherheitsupdates:
 
-| Version | Unterstützt          |
+| Version | UnterstÃ¼tzt          |
 | ------- | -------------------- |
-| 1.0.x   | :white_check_mark:   |
-| < 1.0   | :x:                  |
+| 1.0.x   | Ja                   |
+| < 1.0   | Nein                 |
 
-## Sicherheitslücke melden
+## SicherheitslÃ¼cke melden
 
-**Bitte melden Sie Sicherheitslücken NICHT über öffentliche GitHub Issues.**
+**Bitte melden Sie SicherheitslÃ¼cken NICHT Ã¼ber Ã¶ffentliche GitHub Issues.**
 
-Wenn Sie eine Sicherheitslücke entdecken, senden Sie bitte eine E-Mail an:
-
-**[IHRE-SICHERHEITS-EMAIL@EXAMPLE.COM]**
+Wenn Sie eine SicherheitslÃ¼cke entdecken, senden Sie bitte eine E-Mail an den Projektmaintainer.
 
 ### Was sollte der Bericht enthalten?
 
-Bitte geben Sie so viele der folgenden Informationen wie möglich an:
+Bitte geben Sie so viele der folgenden Informationen wie mÃ¶glich an:
 
-- **Art der Sicherheitslücke** (z.B. Injection, Race Condition, Denial of Service, etc.)
-- **Vollständige Pfade** der betroffenen Quelldateien
+- **Art der SicherheitslÃ¼cke** (z.B. Injection, Race Condition, Denial of Service, etc.)
+- **VollstÃ¤ndige Pfade** der betroffenen Quelldateien
 - **Standort** des betroffenen Quellcodes (Tag/Branch/Commit oder direkte URL)
 - **Spezielle Konfiguration**, die erforderlich ist, um das Problem zu reproduzieren
-- **Schritt-für-Schritt-Anleitung** zur Reproduktion des Problems
-- **Proof-of-Concept oder Exploit-Code** (falls möglich)
-- **Auswirkung** der Sicherheitslücke, einschließlich wie ein Angreifer die Lücke ausnutzen könnte
+- **Schritt-fÃ¼r-Schritt-Anleitung** zur Reproduktion des Problems
+- **Proof-of-Concept oder Exploit-Code** (falls mÃ¶glich)
+- **Auswirkung** der SicherheitslÃ¼cke, einschlieÃŸlich wie ein Angreifer die LÃ¼cke ausnutzen kÃ¶nnte
 
 Diese Informationen helfen uns, Ihren Bericht schneller zu bearbeiten.
 
 ## Reaktionszeit
 
-Wir bemühen uns:
+Wir bemÃ¼hen uns:
 
 - Innerhalb von **48 Stunden** auf Ihren Bericht zu antworten
-- Innerhalb von **7 Tagen** eine erste Einschätzung der Schwere zu geben
-- Sie über den **Fortschritt** zur Behebung auf dem Laufenden zu halten
+- Innerhalb von **7 Tagen** eine erste EinschÃ¤tzung der Schwere zu geben
+- Sie Ã¼ber den **Fortschritt** zur Behebung auf dem Laufenden zu halten
 
 ## Offenlegungsrichtlinie
 
-Wenn Sie eine Sicherheitslücke melden:
+Wenn Sie eine SicherheitslÃ¼cke melden:
 
 1. Geben Sie uns eine angemessene Zeit zur Behebung (mindestens 90 Tage)
 2. Wir werden mit Ihnen zusammenarbeiten, um das Problem zu verstehen und zu beheben
-3. Wir werden Sie über den Fortschritt informieren
-4. Nach der Veröffentlichung eines Patches können wir gemeinsam die Details offenlegen
-5. Wir würdigen Ihre Entdeckung gerne (falls gewünscht)
+3. Wir werden Sie Ã¼ber den Fortschritt informieren
+4. Nach der VerÃ¶ffentlichung eines Patches kÃ¶nnen wir gemeinsam die Details offenlegen
+5. Wir wÃ¼rdigen Ihre Entdeckung gerne (falls gewÃ¼nscht)
 
 ## Bevorzugte Sprachen
 
 Wir bevorzugen alle Kommunikation auf **Deutsch** oder **Englisch**.
 
-## Sicherheits-Best-Practices für Benutzer
+## Sicherheits-Best-Practices fÃ¼r Benutzer
 
 ### Bei Verwendung von DataStores
 
 1. **Persistierung**
-   - Verwenden Sie verschlüsselte Speicherstrategien für sensible Daten
-   - Stellen Sie sicher, dass Persistierungs-Dateien angemessen geschützt sind
+   - Verwenden Sie verschlÃ¼sselte Speicherstrategien fÃ¼r sensible Daten
+   - Stellen Sie sicher, dass Persistierungs-Dateien angemessen geschÃ¼tzt sind
    - Implementieren Sie Zugriffskontrolle auf Persistierungs-Speicher
 
 2. **Dependency Injection**
-   - Registrieren Sie Stores nur in vertrauenswürdigen Registraren
+   - Registrieren Sie Stores nur in vertrauenswÃ¼rdigen Registraren
    - Validieren Sie Eingaben vor dem Speichern in Stores
 
 3. **Thread-Sicherheit**
-   - DataStores ist thread-sicher, aber Ihre Geschäftslogik muss es ebenfalls sein
+   - DataStores ist thread-sicher, aber Ihre GeschÃ¤ftslogik muss es ebenfalls sein
    - Seien Sie vorsichtig bei der Verwendung von Events in Multi-Thread-Umgebungen
 
 4. **Serialisierung**
@@ -75,7 +73,7 @@ Wir bevorzugen alle Kommunikation auf **Deutsch** oder **Englisch**.
    - Validieren Sie deserialisierte Daten
    - Achten Sie auf Deserialisierungs-Angriffe bei Custom IPersistenceStrategy
 
-### Bekannte Sicherheitsüberlegungen
+### Bekannte SicherheitsÃ¼berlegungen
 
 #### Auto-Save in PersistentStoreDecorator
 
@@ -108,25 +106,25 @@ public class SecurePersistenceStrategy<T> : IPersistenceStrategy<T>
 
 #### Race Conditions
 
-**Geschützt**: DataStores verwendet Locks und Semaphores für Thread-Sicherheit.
+**GeschÃ¼tzt**: DataStores verwendet Locks und Semaphores fÃ¼r Thread-Sicherheit.
 
-**Nicht geschützt**: 
-- Operationen über mehrere Stores hinweg
-- Geschäftslogik in Event-Handlern
+**Nicht geschÃ¼tzt**: 
+- Operationen Ã¼ber mehrere Stores hinweg
+- GeschÃ¤ftslogik in Event-Handlern
 
-**Empfehlung**: Implementieren Sie eigene Synchronisation für komplexe Workflows.
+**Empfehlung**: Implementieren Sie eigene Synchronisation fÃ¼r komplexe Workflows.
 
 ## Sicherheits-Audit
 
-Dieses Projekt wurde **nicht** durch ein professionelles Sicherheits-Audit überprüft.
+Dieses Projekt wurde **nicht** durch ein professionelles Sicherheits-Audit Ã¼berprÃ¼ft.
 
-Wir freuen uns über Security-Reviews und nehmen Sicherheits-Feedback ernst.
+Wir freuen uns Ã¼ber Security-Reviews und nehmen Sicherheits-Feedback ernst.
 
 ## Hall of Fame
 
-Wir danken folgenden Sicherheitsforschern für verantwortungsvolle Offenlegung:
+Wir danken folgenden Sicherheitsforschern fÃ¼r verantwortungsvolle Offenlegung:
 
-*(Noch keine Einträge)*
+*(Noch keine EintrÃ¤ge)*
 
 ---
 

@@ -9,13 +9,13 @@ Fixes #(issue)
 ## Typ der Änderung
 <!-- Markieren Sie relevante Optionen -->
 
-- [ ] 🐛 Bug Fix (nicht-breaking change)
-- [ ] ✨ Neues Feature (nicht-breaking change)
-- [ ] 💥 Breaking Change (fix oder feature, das existierende Funktionalität bricht)
-- [ ] 📝 Dokumentation
-- [ ] 🎨 Code-Stil/Refactoring
-- [ ] ⚡ Performance-Verbesserung
-- [ ] ✅ Tests
+- [ ] Bug Fix (nicht-breaking change)
+- [ ] Neues Feature (nicht-breaking change)
+- [ ] Breaking Change (fix oder feature, das existierende Funktionalität bricht)
+- [ ] Dokumentation
+- [ ] Code-Stil/Refactoring
+- [ ] Performance-Verbesserung
+- [ ] Tests
 
 ## Änderungen
 <!-- Detaillierte Liste der Änderungen -->

@@ -1,39 +1,39 @@
 # DataStores Solution
 
-Eine leistungsstarke .NET 8 Bibliothek f�r die Verwaltung von In-Memory-Datenspeichern mit Unterst�tzung f�r Persistierung, globale und lokale Stores sowie Eltern-Kind-Beziehungen.
+Eine leistungsstarke .NET 8 Bibliothek für die Verwaltung von In-Memory-Datenspeichern mit Unterstützung für Persistierung, globale und lokale Stores sowie Eltern-Kind-Beziehungen.
 
-## ?? �bersicht
+## Übersicht
 
 Diese Solution besteht aus zwei Hauptprojekten:
 
 ### 1. **DataStores** - Kernbibliothek
 Eine flexible und erweiterbare Bibliothek zum Verwalten von typsicheren Datensammlungen im Speicher. Die Bibliothek bietet:
-- ?? Thread-sichere In-Memory-Datenspeicher
-- ?? Globale und lokale Datenspeicher-Konzepte
-- ?? Optionale Persistierung mit asynchronen Strategien
-- ??????????? Eltern-Kind-Beziehungen zwischen Datensammlungen
-- ?? Dependency Injection Integration
-- ?? Event-basierte �nderungsbenachrichtigungen
+- Thread-sichere In-Memory-Datenspeicher
+- Globale und lokale Datenspeicher-Konzepte
+- Optionale Persistierung mit asynchronen Strategien
+- Eltern-Kind-Beziehungen zwischen Datensammlungen
+- Dependency Injection Integration
+- Event-basierte Änderungsbenachrichtigungen
 
-[?? Zur DataStores Dokumentation](DataStores/README.md)
+[Zur DataStores Dokumentation](DataStores/README.md)
 
 ### 2. **DataStores.Tests** - Unit Tests
-Umfassende Testsuite mit �ber 100 Tests zur Sicherstellung der Qualit�t und Zuverl�ssigkeit:
-- ? Unit Tests f�r alle Kernkomponenten
-- ?? Nebenl�ufigkeits- und Thread-Sicherheitstests
-- ?? Performance- und Stress-Tests
-- ?? Integrationstests f�r End-to-End-Szenarien
-- ??? Edge-Case- und Fehlerbehandlungstests
+Umfassende Testsuite mit über 100 Tests zur Sicherstellung der Qualität und Zuverlässigkeit:
+- Unit Tests für alle Kernkomponenten
+- Nebenläufigkeits- und Thread-Sicherheitstests
+- Performance- und Stress-Tests
+- Integrationstests für End-to-End-Szenarien
+- Edge-Case- und Fehlerbehandlungstests
 
-[?? Zur DataStores.Tests Dokumentation](DataStores.Tests/README.md)
+[Zur DataStores.Tests Dokumentation](DataStores.Tests/README.md)
 
-## ?? Schnellstart
+## Schnellstart
 
 ### Installation
 
 ```bash
 # Klonen Sie das Repository
-git clone https://github.com/yourusername/DataStores.git
+git clone https://github.com/ReneRose1971/DataStores.git
 
 # Wechseln Sie in das Verzeichnis
 cd DataStores
@@ -53,116 +53,116 @@ using Microsoft.Extensions.DependencyInjection;
 var services = new ServiceCollection();
 services.AddDataStoresCore();
 
-// 2. Registrar hinzuf�gen
+// 2. Registrar hinzufügen
 services.AddDataStoreRegistrar<MyDataStoreRegistrar>();
 
 var provider = services.BuildServiceProvider();
 
-// 3. Bootstrap ausf�hren
+// 3. Bootstrap ausführen
 await DataStoreBootstrap.RunAsync(provider);
 
 // 4. DataStores verwenden
 var stores = provider.GetRequiredService<IDataStores>();
 var productStore = stores.GetGlobal<Product>();
 
-// 5. Daten hinzuf�gen
+// 5. Daten hinzufügen
 productStore.Add(new Product { Id = 1, Name = "Laptop" });
 
-// 6. Auf �nderungen reagieren
+// 6. Auf Änderungen reagieren
 productStore.Changed += (sender, args) => 
 {
-    Console.WriteLine($"Store ge�ndert: {args.ChangeType}");
+    Console.WriteLine($"Store geändert: {args.ChangeType}");
 };
 ```
 
-## ??? Architektur
+## Architektur
 
 ```
-???????????????????????????????????????????????????????????
-?                    IDataStores (Facade)                  ?
-?  - GetGlobal<T>()                                        ?
-?  - CreateLocal<T>()                                      ?
-?  - CreateLocalSnapshotFromGlobal<T>()                    ?
-???????????????????????????????????????????????????????????
-                ?                 ?
-    ????????????????????????   ???????????????????????????
-    ? GlobalStoreRegistry  ?   ? LocalDataStoreFactory   ?
-    ? (Thread-safe)        ?   ?                         ?
-    ????????????????????????   ???????????????????????????
-               ?
-    ???????????????????????????????????????????????????????
-    ?          InMemoryDataStore<T>                       ?
-    ?  - Thread-sicher                                    ?
-    ?  - Event-basiert                                    ?
-    ?  - Anpassbare Comparer                              ?
-    ???????????????????????????????????????????????????????
-               ?
-    ???????????????????????????????????????????????????????
-    ?     PersistentStoreDecorator<T> (Optional)          ?
-    ?  - Auto-Load                                        ?
-    ?  - Auto-Save                                        ?
-    ?  - Async Persistence                                ?
-    ???????????????????????????????????????????????????????
+┌─────────────────────────────────────────────────────────┐
+│                    IDataStores (Facade)                  │
+│  - GetGlobal<T>()                                        │
+│  - CreateLocal<T>()                                      │
+│  - CreateLocalSnapshotFromGlobal<T>()                    │
+└───────────────┬─────────────────┬───────────────────────┘
+                │                 │
+    ┌───────────▼──────────┐   ┌──▼──────────────────────┐
+    │ GlobalStoreRegistry  │   │ LocalDataStoreFactory   │
+    │ (Thread-safe)        │   │                         │
+    └──────────┬───────────┘   └─────────────────────────┘
+               │
+    ┌──────────▼──────────────────────────────────────────┐
+    │          InMemoryDataStore<T>                       │
+    │  - Thread-sicher                                    │
+    │  - Event-basiert                                    │
+    │  - Anpassbare Comparer                              │
+    └──────────┬──────────────────────────────────────────┘
+               │
+    ┌──────────▼──────────────────────────────────────────┐
+    │     PersistentStoreDecorator<T> (Optional)          │
+    │  - Auto-Load                                        │
+    │  - Auto-Save                                        │
+    │  - Async Persistence                                │
+    └─────────────────────────────────────────────────────┘
 ```
 
-## ?? Projektstruktur
+## Projektstruktur
 
 ```
 DataStores/
-??? DataStores/                    # Hauptbibliothek
-?   ??? Abstractions/              # Interfaces und Basisklassen
-?   ??? Runtime/                   # Laufzeit-Implementierungen
-?   ??? Persistence/               # Persistierung-Funktionalit�t
-?   ??? Relations/                 # Eltern-Kind-Beziehungen
-?   ??? Bootstrap/                 # Initialisierung und DI
-?   ??? Docs/                      # Ausf�hrliche Dokumentation
-?   ??? README.md                  # Projekt-Dokumentation
-?
-??? DataStores.Tests/              # Test-Projekt
-?   ??? Runtime/                   # Runtime-Tests
-?   ??? Persistence/               # Persistierung-Tests
-?   ??? Relations/                 # Beziehungs-Tests
-?   ??? Integration/               # End-to-End-Tests
-?   ??? Performance/               # Performance-Tests
-?   ??? README.md                  # Test-Dokumentation
-?
-??? README.md                      # Diese Datei
+├── DataStores/                    # Hauptbibliothek
+│   ├── Abstractions/              # Interfaces und Basisklassen
+│   ├── Runtime/                   # Laufzeit-Implementierungen
+│   ├── Persistence/               # Persistierung-Funktionalität
+│   ├── Relations/                 # Eltern-Kind-Beziehungen
+│   ├── Bootstrap/                 # Initialisierung und DI
+│   ├── Docs/                      # Ausführliche Dokumentation
+│   └── README.md                  # Projekt-Dokumentation
+│
+├── DataStores.Tests/              # Test-Projekt
+│   ├── Runtime/                   # Runtime-Tests
+│   ├── Persistence/               # Persistierung-Tests
+│   ├── Relations/                 # Beziehungs-Tests
+│   ├── Integration/               # End-to-End-Tests
+│   ├── Performance/               # Performance-Tests
+│   └── README.md                  # Test-Dokumentation
+│
+└── README.md                      # Diese Datei
 ```
 
-## ?? Hauptfunktionen
+## Hauptfunktionen
 
 ### Globale vs. Lokale Stores
-- **Globale Stores**: Singleton-Instanzen, die �ber die gesamte Anwendung geteilt werden
-- **Lokale Stores**: Isolierte Instanzen f�r spezifische Anwendungsf�lle (z.B. Dialog-/Formularkontext)
+- **Globale Stores**: Singleton-Instanzen, die über die gesamte Anwendung geteilt werden
+- **Lokale Stores**: Isolierte Instanzen für spezifische Anwendungsfälle (z.B. Dialog-/Formularkontext)
 - **Snapshots**: Erstellen Sie lokale Kopien von globalen Stores mit optionalen Filtern
 
 ### Persistierung
-- Asynchrone Lade- und Speichervorg�nge
+- Asynchrone Lade- und Speichervorgänge
 - Auto-Load beim Bootstrap
-- Auto-Save bei �nderungen
+- Auto-Save bei Änderungen
 - Benutzerdefinierte Persistierungsstrategien
 - Fehlertoleranz und Race-Condition-Handling
 
 ### Eltern-Kind-Beziehungen
-- Definieren Sie hierarchische Beziehungen zwischen Entit�ten
+- Definieren Sie hierarchische Beziehungen zwischen Entitäten
 - Automatische Filterung von Kind-Elementen
-- Lazy Loading und Snapshot-Unterst�tzung
-- Refresh-Mechanismus f�r aktuelle Daten
+- Lazy Loading und Snapshot-Unterstützung
+- Refresh-Mechanismus für aktuelle Daten
 
 ### Thread-Sicherheit
 - Alle Operationen sind thread-sicher
 - Lock-basierte Synchronisation
-- Optionale SynchronizationContext-Unterst�tzung f�r UI-Threads
-- Getestet mit Stress-Tests und Nebenl�ufigkeits-Szenarien
+- Optionale SynchronizationContext-Unterstützung für UI-Threads
+- Getestet mit Stress-Tests und Nebenläufigkeits-Szenarien
 
-## ?? Technologien
+## Technologien
 
 - **.NET 8** - Target Framework
 - **C# 12** - Programmiersprache
 - **xUnit** - Test-Framework
 - **Microsoft.Extensions.DependencyInjection** - Dependency Injection
 
-## ?? Weitere Dokumentation
+## Weitere Dokumentation
 
 - [DataStores Projekt README](DataStores/README.md)
   - [API Referenz](DataStores/Docs/API-Reference.md)
@@ -173,21 +173,21 @@ DataStores/
 
 - [DataStores.Tests Projekt README](DataStores.Tests/README.md)
 
-## ?? Beitragen
+## Beitragen
 
-Beitr�ge sind willkommen! Bitte stellen Sie sicher, dass:
+Beiträge sind willkommen! Bitte stellen Sie sicher, dass:
 1. Alle Tests erfolgreich durchlaufen (`dotnet test`)
 2. Neue Funktionen mit Tests abgedeckt sind
 3. Code den bestehenden Stil folgt
-4. Deutsche Dokumentation hinzugef�gt wird
+4. Deutsche Dokumentation hinzugefügt wird
 
-## ?? Lizenz
+## Lizenz
 
-[Ihre Lizenz hier einf�gen]
+[Ihre Lizenz hier einfügen]
 
-## ?? Autor
+## Autor
 
-[Ihre Informationen hier einf�gen]
+[Ihre Informationen hier einfügen]
 
 ---
 

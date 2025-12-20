@@ -2,81 +2,81 @@
 
 ## Unser Versprechen
 
-Wir als Mitglieder, Beitragende und Führungskräfte verpflichten uns, die Teilnahme an unserer Community zu einer belästigungsfreien Erfahrung für alle zu machen, unabhängig von Alter, Körpergröße, sichtbarer oder unsichtbarer Behinderung, ethnischer Zugehörigkeit, Geschlechtsmerkmalen, Geschlechtsidentität und -ausdruck, Erfahrungsniveau, Bildung, sozioökonomischem Status, Nationalität, persönlichem Aussehen, Rasse, Kaste, Hautfarbe, Religion oder sexueller Identität und Orientierung.
+Wir als Mitglieder, Beitragende und FÃ¼hrungskrÃ¤fte verpflichten uns, die Teilnahme an unserer Community zu einer belÃ¤stigungsfreien Erfahrung fÃ¼r alle zu machen, unabhÃ¤ngig von Alter, KÃ¶rpergrÃ¶ÃŸe, sichtbarer oder unsichtbarer Behinderung, ethnischer ZugehÃ¶rigkeit, Geschlechtsmerkmalen, GeschlechtsidentitÃ¤t und -ausdruck, Erfahrungsniveau, Bildung, sozioÃ¶konomischem Status, NationalitÃ¤t, persÃ¶nlichem Aussehen, Rasse, Kaste, Hautfarbe, Religion oder sexueller IdentitÃ¤t und Orientierung.
 
-Wir verpflichten uns, auf eine Weise zu handeln und zu interagieren, die zu einer offenen, einladenden, vielfältigen, inklusiven und gesunden Community beiträgt.
+Wir verpflichten uns, auf eine Weise zu handeln und zu interagieren, die zu einer offenen, einladenden, vielfÃ¤ltigen, inklusiven und gesunden Community beitrÃ¤gt.
 
 ## Unsere Standards
 
-Beispiele für Verhaltensweisen, die zu einem positiven Umfeld für unsere Community beitragen:
+Beispiele fÃ¼r Verhaltensweisen, die zu einem positiven Umfeld fÃ¼r unsere Community beitragen:
 
-* Empathie und Freundlichkeit gegenüber anderen Menschen zeigen
+* Empathie und Freundlichkeit gegenÃ¼ber anderen Menschen zeigen
 * Respekt vor unterschiedlichen Meinungen, Standpunkten und Erfahrungen
-* Konstruktives Feedback geben und würdevoll annehmen
-* Verantwortung übernehmen und sich bei denjenigen entschuldigen, die von unseren Fehlern betroffen sind, und aus den Erfahrungen lernen
-* Sich auf das konzentrieren, was nicht nur für uns als Einzelpersonen, sondern für die gesamte Community am besten ist
+* Konstruktives Feedback geben und wÃ¼rdevoll annehmen
+* Verantwortung Ã¼bernehmen und sich bei denjenigen entschuldigen, die von unseren Fehlern betroffen sind, und aus den Erfahrungen lernen
+* Sich auf das konzentrieren, was nicht nur fÃ¼r uns als Einzelpersonen, sondern fÃ¼r die gesamte Community am besten ist
 
-Beispiele für inakzeptables Verhalten:
+Beispiele fÃ¼r inakzeptables Verhalten:
 
-* Die Verwendung sexualisierter Sprache oder Bilder sowie sexuelle Aufmerksamkeit oder Annäherungsversuche jeglicher Art
-* Trolling, beleidigende oder abwertende Kommentare und persönliche oder politische Angriffe
-* Öffentliche oder private Belästigung
-* Veröffentlichung privater Informationen anderer Personen, wie z.B. physische oder E-Mail-Adresse, ohne deren ausdrückliche Erlaubnis
-* Anderes Verhalten, das in einem professionellen Umfeld vernünftigerweise als unangemessen angesehen werden könnte
+* Die Verwendung sexualisierter Sprache oder Bilder sowie sexuelle Aufmerksamkeit oder AnnÃ¤herungsversuche jeglicher Art
+* Trolling, beleidigende oder abwertende Kommentare und persÃ¶nliche oder politische Angriffe
+* Ã–ffentliche oder private BelÃ¤stigung
+* VerÃ¶ffentlichung privater Informationen anderer Personen, wie z.B. physische oder E-Mail-Adresse, ohne deren ausdrÃ¼ckliche Erlaubnis
+* Anderes Verhalten, das in einem professionellen Umfeld vernÃ¼nftigerweise als unangemessen angesehen werden kÃ¶nnte
 
 ## Durchsetzungsverantwortung
 
-Community-Führungskräfte sind verantwortlich für die Klärung und Durchsetzung unserer Standards für akzeptables Verhalten und werden angemessene und faire Korrekturmaßnahmen ergreifen als Reaktion auf jedes Verhalten, das sie für unangemessen, bedrohlich, beleidigend oder schädlich halten.
+Community-FÃ¼hrungskrÃ¤fte sind verantwortlich fÃ¼r die KlÃ¤rung und Durchsetzung unserer Standards fÃ¼r akzeptables Verhalten und werden angemessene und faire KorrekturmaÃŸnahmen ergreifen als Reaktion auf jedes Verhalten, das sie fÃ¼r unangemessen, bedrohlich, beleidigend oder schÃ¤dlich halten.
 
-Community-Führungskräfte haben das Recht und die Verantwortung, Kommentare, Commits, Code, Wiki-Bearbeitungen, Issues und andere Beiträge zu entfernen, zu bearbeiten oder abzulehnen, die nicht mit diesem Code of Conduct übereinstimmen, und werden Gründe für Moderationsentscheidungen mitteilen, wenn dies angemessen ist.
+Community-FÃ¼hrungskrÃ¤fte haben das Recht und die Verantwortung, Kommentare, Commits, Code, Wiki-Bearbeitungen, Issues und andere BeitrÃ¤ge zu entfernen, zu bearbeiten oder abzulehnen, die nicht mit diesem Code of Conduct Ã¼bereinstimmen, und werden GrÃ¼nde fÃ¼r Moderationsentscheidungen mitteilen, wenn dies angemessen ist.
 
 ## Geltungsbereich
 
-Dieser Code of Conduct gilt in allen Community-Bereichen und gilt auch, wenn eine Person die Community offiziell in öffentlichen Bereichen vertritt. Beispiele für die Vertretung unserer Community sind die Verwendung einer offiziellen E-Mail-Adresse, das Posten über ein offizielles Social-Media-Konto oder das Auftreten als ernannter Vertreter bei einer Online- oder Offline-Veranstaltung.
+Dieser Code of Conduct gilt in allen Community-Bereichen und gilt auch, wenn eine Person die Community offiziell in Ã¶ffentlichen Bereichen vertritt. Beispiele fÃ¼r die Vertretung unserer Community sind die Verwendung einer offiziellen E-Mail-Adresse, das Posten Ã¼ber ein offizielles Social-Media-Konto oder das Auftreten als ernannter Vertreter bei einer Online- oder Offline-Veranstaltung.
 
 ## Durchsetzung
 
-Fälle von missbräuchlichem, belästigendem oder anderweitig inakzeptablem Verhalten können den Community-Führungskräften gemeldet werden, die für die Durchsetzung verantwortlich sind unter [EMAIL-ADRESSE EINFÜGEN].
+FÃ¤lle von missbrÃ¤uchlichem, belÃ¤stigendem oder anderweitig inakzeptablem Verhalten kÃ¶nnen den Community-FÃ¼hrungskrÃ¤ften gemeldet werden, die fÃ¼r die Durchsetzung verantwortlich sind.
 
-Alle Beschwerden werden zeitnah und fair geprüft und untersucht.
+Alle Beschwerden werden zeitnah und fair geprÃ¼ft und untersucht.
 
-Alle Community-Führungskräfte sind verpflichtet, die Privatsphäre und Sicherheit des Melders eines Vorfalls zu respektieren.
+Alle Community-FÃ¼hrungskrÃ¤fte sind verpflichtet, die PrivatsphÃ¤re und Sicherheit des Melders eines Vorfalls zu respektieren.
 
 ## Durchsetzungsrichtlinien
 
-Community-Führungskräfte werden diese Community-Wirkungsrichtlinien befolgen, um die Konsequenzen für jede Handlung zu bestimmen, die sie als Verstoß gegen diesen Code of Conduct ansehen:
+Community-FÃ¼hrungskrÃ¤fte werden diese Community-Wirkungsrichtlinien befolgen, um die Konsequenzen fÃ¼r jede Handlung zu bestimmen, die sie als VerstoÃŸ gegen diesen Code of Conduct ansehen:
 
 ### 1. Korrektur
 
 **Auswirkung auf die Community**: Verwendung unangemessener Sprache oder anderes Verhalten, das in der Community als unprofessionell oder unwillkommen gilt.
 
-**Konsequenz**: Eine private, schriftliche Verwarnung von Community-Führungskräften, die Klarheit über die Art des Verstoßes und eine Erklärung, warum das Verhalten unangemessen war, bietet. Eine öffentliche Entschuldigung kann verlangt werden.
+**Konsequenz**: Eine private, schriftliche Verwarnung von Community-FÃ¼hrungskrÃ¤ften, die Klarheit Ã¼ber die Art des VerstoÃŸes und eine ErklÃ¤rung, warum das Verhalten unangemessen war, bietet. Eine Ã¶ffentliche Entschuldigung kann verlangt werden.
 
 ### 2. Verwarnung
 
-**Auswirkung auf die Community**: Ein Verstoß durch einen einzelnen Vorfall oder eine Reihe von Handlungen.
+**Auswirkung auf die Community**: Ein VerstoÃŸ durch einen einzelnen Vorfall oder eine Reihe von Handlungen.
 
-**Konsequenz**: Eine Verwarnung mit Konsequenzen für fortgesetztes Verhalten. Keine Interaktion mit den beteiligten Personen, einschließlich unaufgeforderter Interaktion mit denjenigen, die den Code of Conduct durchsetzen, für einen bestimmten Zeitraum. Dies schließt die Vermeidung von Interaktionen in Community-Räumen sowie externen Kanälen wie sozialen Medien ein. Ein Verstoß gegen diese Bedingungen kann zu einem vorübergehenden oder dauerhaften Verbot führen.
+**Konsequenz**: Eine Verwarnung mit Konsequenzen fÃ¼r fortgesetztes Verhalten. Keine Interaktion mit den beteiligten Personen, einschlieÃŸlich unaufgeforderter Interaktion mit denjenigen, die den Code of Conduct durchsetzen, fÃ¼r einen bestimmten Zeitraum. Dies schlieÃŸt die Vermeidung von Interaktionen in Community-RÃ¤umen sowie externen KanÃ¤len wie sozialen Medien ein. Ein VerstoÃŸ gegen diese Bedingungen kann zu einem vorÃ¼bergehenden oder dauerhaften Verbot fÃ¼hren.
 
-### 3. Vorübergehendes Verbot
+### 3. VorÃ¼bergehendes Verbot
 
-**Auswirkung auf die Community**: Ein schwerwiegender Verstoß gegen Community-Standards, einschließlich anhaltend unangemessenen Verhaltens.
+**Auswirkung auf die Community**: Ein schwerwiegender VerstoÃŸ gegen Community-Standards, einschlieÃŸlich anhaltend unangemessenen Verhaltens.
 
-**Konsequenz**: Ein vorübergehendes Verbot jeglicher Art von Interaktion oder öffentlicher Kommunikation mit der Community für einen bestimmten Zeitraum. Während dieses Zeitraums ist keine öffentliche oder private Interaktion mit den beteiligten Personen, einschließlich unaufgeforderter Interaktion mit denjenigen, die den Code of Conduct durchsetzen, erlaubt. Ein Verstoß gegen diese Bedingungen kann zu einem dauerhaften Verbot führen.
+**Konsequenz**: Ein vorÃ¼bergehendes Verbot jeglicher Art von Interaktion oder Ã¶ffentlicher Kommunikation mit der Community fÃ¼r einen bestimmten Zeitraum. WÃ¤hrend dieses Zeitraums ist keine Ã¶ffentliche oder private Interaktion mit den beteiligten Personen, einschlieÃŸlich unaufgeforderter Interaktion mit denjenigen, die den Code of Conduct durchsetzen, erlaubt. Ein VerstoÃŸ gegen diese Bedingungen kann zu einem dauerhaften Verbot fÃ¼hren.
 
 ### 4. Dauerhaftes Verbot
 
-**Auswirkung auf die Community**: Demonstration eines Musters von Verstößen gegen Community-Standards, einschließlich anhaltend unangemessenen Verhaltens, Belästigung einer Person oder Aggression gegen oder Herabsetzung von Gruppen von Personen.
+**Auswirkung auf die Community**: Demonstration eines Musters von VerstÃ¶ÃŸen gegen Community-Standards, einschlieÃŸlich anhaltend unangemessenen Verhaltens, BelÃ¤stigung einer Person oder Aggression gegen oder Herabsetzung von Gruppen von Personen.
 
-**Konsequenz**: Ein dauerhaftes Verbot jeglicher Art von öffentlicher Interaktion innerhalb der Community.
+**Konsequenz**: Ein dauerhaftes Verbot jeglicher Art von Ã¶ffentlicher Interaktion innerhalb der Community.
 
 ## Zuordnung
 
-Dieser Code of Conduct ist adaptiert vom [Contributor Covenant][homepage], Version 2.1, verfügbar unter [https://www.contributor-covenant.org/version/2/1/code_of_conduct.html][v2.1].
+Dieser Code of Conduct ist adaptiert vom [Contributor Covenant][homepage], Version 2.1, verfÃ¼gbar unter [https://www.contributor-covenant.org/version/2/1/code_of_conduct.html][v2.1].
 
 Die Community-Wirkungsrichtlinien wurden von [Mozillas Code of Conduct Durchsetzungsleiter](https://github.com/mozilla/diversity) inspiriert.
 
 [homepage]: https://www.contributor-covenant.org
 [v2.1]: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
 
-Für Antworten auf häufig gestellte Fragen zu diesem Code of Conduct siehe die FAQ unter [https://www.contributor-covenant.org/faq](https://www.contributor-covenant.org/faq). Übersetzungen sind verfügbar unter [https://www.contributor-covenant.org/translations](https://www.contributor-covenant.org/translations).
+FÃ¼r Antworten auf hÃ¤ufig gestellte Fragen zu diesem Code of Conduct siehe die FAQ unter [https://www.contributor-covenant.org/faq](https://www.contributor-covenant.org/faq). Ãœbersetzungen sind verfÃ¼gbar unter [https://www.contributor-covenant.org/translations](https://www.contributor-covenant.org/translations).
