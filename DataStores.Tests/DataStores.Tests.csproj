@@ -22,11 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DataStores.Abstractions\DataStores.Abstractions.csproj" />
-    <ProjectReference Include="..\DataStores.Runtime\DataStores.Runtime.csproj" />
-    <ProjectReference Include="..\DataStores.Persistence\DataStores.Persistence.csproj" />
-    <ProjectReference Include="..\DataStores.Relations\DataStores.Relations.csproj" />
-    <ProjectReference Include="..\DataStores.Bootstrap\DataStores.Bootstrap.csproj" />
+    <ProjectReference Include="..\DataStores\DataStores.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -2,7 +2,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DataStores.Abstractions\DataStores.Abstractions.csproj" />
-    <ProjectReference Include="..\DataStores.Runtime\DataStores.Runtime.csproj" />
   </ItemGroup>
 
   <PropertyGroup>

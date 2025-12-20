@@ -1,0 +1,16 @@
+# Diese Dateien werden verwendet, um Informationen über Finanzierungsmöglichkeiten anzuzeigen
+# Weitere Informationen: https://help.github.com/en/articles/displaying-a-sponsor-button-in-your-repository
+
+# Kommentieren Sie die relevanten Plattformen ein:
+
+# github: [username]
+# patreon: username
+# open_collective: projectname
+# ko_fi: username
+# tidelift: npm/package-name
+# community_bridge: project-name
+# liberapay: username
+# issuehunt: username
+# otechie: username
+# lfx_crowdfunding: project-name
+# custom: ['https://example.com', 'https://example2.com']

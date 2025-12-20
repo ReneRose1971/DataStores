@@ -1,482 +1,194 @@
 # DataStores Solution
 
-Eine umfassende, thread-sichere Datenspeicher-Bibliothek für .NET 8 mit Unterstützung für globale und lokale Stores, Persistenz und Parent-Child-Beziehungen.
-
-[![.NET Version](https://img.shields.io/badge/.NET-8.0-blue)](https://dotnet.microsoft.com/)
-[![Tests](https://img.shields.io/badge/Tests-212%20passed-success)](DataStores.Tests/COMPLETE_REPORT.md)
-[![Coverage](https://img.shields.io/badge/Coverage-~98%25-brightgreen)](DataStores.Tests/COMPLETE_REPORT.md)
-
----
-
-## ?? Inhaltsverzeichnis
-
-- [Übersicht](#übersicht)
-- [Architektur](#architektur)
-- [Projekte](#projekte)
-- [Schnellstart](#schnellstart)
-- [Features](#features)
-- [Dokumentation](#dokumentation)
-- [Tests](#tests)
-- [Lizenz](#lizenz)
-
----
+Eine leistungsstarke .NET 8 Bibliothek für die Verwaltung von In-Memory-Datenspeichern mit Unterstützung für Persistierung, globale und lokale Stores sowie Eltern-Kind-Beziehungen.
 
 ## ?? Übersicht
 
-DataStores ist eine moderne, flexible Datenspeicher-Bibliothek, die entwickelt wurde, um die Verwaltung von In-Memory-Daten in .NET-Anwendungen zu vereinfachen. Sie bietet:
+Diese Solution besteht aus zwei Hauptprojekten:
 
-- ? **Thread-sichere** In-Memory-Stores
-- ? **Globale & lokale** Store-Verwaltung
-- ? **Persistenz-Unterstützung** via Decorator-Pattern
-- ? **Parent-Child-Beziehungen** mit flexiblen Filtern
-- ? **Dependency Injection** Integration
-- ? **Event-System** für Change-Notifications
-- ? **Snapshot-Isolation** für unabhängige Datensichten
+### 1. **DataStores** - Kernbibliothek
+Eine flexible und erweiterbare Bibliothek zum Verwalten von typsicheren Datensammlungen im Speicher. Die Bibliothek bietet:
+- ?? Thread-sichere In-Memory-Datenspeicher
+- ?? Globale und lokale Datenspeicher-Konzepte
+- ?? Optionale Persistierung mit asynchronen Strategien
+- ??????????? Eltern-Kind-Beziehungen zwischen Datensammlungen
+- ?? Dependency Injection Integration
+- ?? Event-basierte Änderungsbenachrichtigungen
 
----
+[?? Zur DataStores Dokumentation](DataStores/README.md)
 
-## ??? Architektur
+### 2. **DataStores.Tests** - Unit Tests
+Umfassende Testsuite mit über 100 Tests zur Sicherstellung der Qualität und Zuverlässigkeit:
+- ? Unit Tests für alle Kernkomponenten
+- ?? Nebenläufigkeits- und Thread-Sicherheitstests
+- ?? Performance- und Stress-Tests
+- ?? Integrationstests für End-to-End-Szenarien
+- ??? Edge-Case- und Fehlerbehandlungstests
 
-Die Solution folgt einer klaren, schichtenbasierten Architektur:
-
-```
-???????????????????????????????????????????????????????????
-?                    Consumer Application                  ?
-???????????????????????????????????????????????????????????
-                            ?
-???????????????????????????????????????????????????????????
-?               DataStores.Bootstrap (DI)                  ?
-???????????????????????????????????????????????????????????
-                            ?
-?????????????????????????????????????????????????????????
-?  Relations   ?   Persistence    ?      Runtime        ?
-?  (optional)  ?   (decorator)    ?   (core stores)     ?
-?????????????????????????????????????????????????????????
-                            ?
-???????????????????????????????????????????????????????????
-?            DataStores.Abstractions (contracts)           ?
-???????????????????????????????????????????????????????????
-```
-
-### Design-Prinzipien
-
-1. **Keine Vererbungshierarchien** - Decorator statt Ableitung
-2. **Explicit > Implicit** - Keine versteckten Seiteneffekte
-3. **Testability First** - 98% Test-Coverage
-4. **Thread-Safe by Default** - Sichere Concurrent-Nutzung
-5. **Separation of Concerns** - Klare Verantwortlichkeiten
-
----
-
-## ?? Projekte
-
-### Core Projects
-
-| Projekt | Beschreibung | Dokumentation |
-|---------|-------------|---------------|
-| **[DataStores.Abstractions](DataStores.Abstractions/README.md)** | Basis-Interfaces und Contracts | [API-Referenz](DataStores.Abstractions/Docs/API.md) |
-| **[DataStores.Runtime](DataStores.Runtime/README.md)** | In-Memory-Implementierung & Registry | [API-Referenz](DataStores.Runtime/Docs/API.md) |
-| **[DataStores.Persistence](DataStores.Persistence/README.md)** | Persistenz-Decorator & Strategien | [API-Referenz](DataStores.Persistence/Docs/API.md) |
-| **[DataStores.Relations](DataStores.Relations/README.md)** | Parent-Child-Beziehungen | [API-Referenz](DataStores.Relations/Docs/API.md) |
-| **[DataStores.Bootstrap](DataStores.Bootstrap/README.md)** | DI-Integration & Startup | [API-Referenz](DataStores.Bootstrap/Docs/API.md) |
-
-### Test Project
-
-| Projekt | Beschreibung | Dokumentation |
-|---------|-------------|---------------|
-| **[DataStores.Tests](DataStores.Tests/README.md)** | 212 Tests, ~98% Coverage | [Test-Report](DataStores.Tests/COMPLETE_REPORT.md) |
-
----
+[?? Zur DataStores.Tests Dokumentation](DataStores.Tests/README.md)
 
 ## ?? Schnellstart
 
 ### Installation
 
 ```bash
-# Noch nicht auf NuGet verfügbar - Build aus Source
-dotnet build DataStores.sln
+# Klonen Sie das Repository
+git clone https://github.com/yourusername/DataStores.git
+
+# Wechseln Sie in das Verzeichnis
+cd DataStores
+
+# Erstellen Sie die Solution
+dotnet build
 ```
 
-### Basis-Verwendung
+### Grundlegende Verwendung
 
 ```csharp
 using DataStores.Abstractions;
 using DataStores.Bootstrap;
-using DataStores.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 
-// 1. Setup DI
+// 1. Dependency Injection einrichten
 var services = new ServiceCollection();
 services.AddDataStoresCore();
-services.AddDataStoreRegistrar<MyDataRegistrar>();
+
+// 2. Registrar hinzufügen
+services.AddDataStoreRegistrar<MyDataStoreRegistrar>();
 
 var provider = services.BuildServiceProvider();
 
-// 2. Bootstrap
-DataStoreBootstrap.Run(provider);
+// 3. Bootstrap ausführen
+await DataStoreBootstrap.RunAsync(provider);
 
-// 3. Verwenden
+// 4. DataStores verwenden
 var stores = provider.GetRequiredService<IDataStores>();
-var customerStore = stores.GetGlobal<Customer>();
+var productStore = stores.GetGlobal<Product>();
 
-customerStore.Add(new Customer { Id = 1, Name = "John Doe" });
-```
+// 5. Daten hinzufügen
+productStore.Add(new Product { Id = 1, Name = "Laptop" });
 
-### Mit Persistenz
-
-```csharp
-// Registrar mit Persistenz
-public class MyDataRegistrar : IDataStoreRegistrar
+// 6. Auf Änderungen reagieren
+productStore.Changed += (sender, args) => 
 {
-    public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
-    {
-        var strategy = new JsonFilePersistenceStrategy<Customer>("customers.json");
-        var innerStore = new InMemoryDataStore<Customer>();
-        var persistentStore = new PersistentStoreDecorator<Customer>(
-            innerStore, strategy, autoLoad: true, autoSaveOnChange: true);
-        
-        registry.RegisterGlobal(persistentStore);
-    }
-}
-```
-
-### Mit Relations
-
-```csharp
-// Parent-Child-Beziehung
-var customer = customerStore.Items.First();
-var orderRelation = new ParentChildRelationship<Customer, Order>(
-    stores,
-    customer,
-    (parent, child) => child.CustomerId == parent.Id);
-
-orderRelation.UseGlobalDataSource();
-orderRelation.Refresh();
-
-// Jetzt enthält orderRelation.Childs alle Orders des Customers
-```
-
----
-
-## ? Features
-
-### 1. Globale & Lokale Stores
-
-**Globale Stores** werden zentral registriert und sind application-wide verfügbar:
-
-```csharp
-var globalStore = stores.GetGlobal<Customer>();
-```
-
-**Lokale Stores** sind unabhängige, isolierte Instanzen:
-
-```csharp
-var localStore = stores.CreateLocal<Customer>();
-```
-
-**Snapshots** sind Kopien zu einem bestimmten Zeitpunkt:
-
-```csharp
-var snapshot = stores.CreateLocalSnapshotFromGlobal<Customer>(c => c.IsActive);
-```
-
-### 2. Thread-Safety
-
-Alle Stores sind thread-safe und können concurrent verwendet werden:
-
-```csharp
-Parallel.For(0, 1000, i =>
-{
-    store.Add(new Customer { Id = i, Name = $"Customer{i}" });
-});
-```
-
-### 3. Event-System
-
-Stores feuern Events bei Änderungen:
-
-```csharp
-store.Changed += (sender, args) =>
-{
-    Console.WriteLine($"Change: {args.ChangeType}, Items: {args.AffectedItems.Count}");
+    Console.WriteLine($"Store geändert: {args.ChangeType}");
 };
 ```
 
-### 4. SynchronizationContext-Support
+## ??? Architektur
 
-Events können auf einen bestimmten Thread marshalled werden (z.B. UI-Thread):
-
-```csharp
-var store = new InMemoryDataStore<Customer>(
-    synchronizationContext: SynchronizationContext.Current);
+```
+???????????????????????????????????????????????????????????
+?                    IDataStores (Facade)                  ?
+?  - GetGlobal<T>()                                        ?
+?  - CreateLocal<T>()                                      ?
+?  - CreateLocalSnapshotFromGlobal<T>()                    ?
+???????????????????????????????????????????????????????????
+                ?                 ?
+    ????????????????????????   ???????????????????????????
+    ? GlobalStoreRegistry  ?   ? LocalDataStoreFactory   ?
+    ? (Thread-safe)        ?   ?                         ?
+    ????????????????????????   ???????????????????????????
+               ?
+    ???????????????????????????????????????????????????????
+    ?          InMemoryDataStore<T>                       ?
+    ?  - Thread-sicher                                    ?
+    ?  - Event-basiert                                    ?
+    ?  - Anpassbare Comparer                              ?
+    ???????????????????????????????????????????????????????
+               ?
+    ???????????????????????????????????????????????????????
+    ?     PersistentStoreDecorator<T> (Optional)          ?
+    ?  - Auto-Load                                        ?
+    ?  - Auto-Save                                        ?
+    ?  - Async Persistence                                ?
+    ???????????????????????????????????????????????????????
 ```
 
-### 5. Custom Comparers
+## ?? Projektstruktur
 
-Eigene Gleichheitslogik für Stores:
-
-```csharp
-var comparer = new IdOnlyComparer();
-var store = stores.CreateLocal<Customer>(comparer);
+```
+DataStores/
+??? DataStores/                    # Hauptbibliothek
+?   ??? Abstractions/              # Interfaces und Basisklassen
+?   ??? Runtime/                   # Laufzeit-Implementierungen
+?   ??? Persistence/               # Persistierung-Funktionalität
+?   ??? Relations/                 # Eltern-Kind-Beziehungen
+?   ??? Bootstrap/                 # Initialisierung und DI
+?   ??? Docs/                      # Ausführliche Dokumentation
+?   ??? README.md                  # Projekt-Dokumentation
+?
+??? DataStores.Tests/              # Test-Projekt
+?   ??? Runtime/                   # Runtime-Tests
+?   ??? Persistence/               # Persistierung-Tests
+?   ??? Relations/                 # Beziehungs-Tests
+?   ??? Integration/               # End-to-End-Tests
+?   ??? Performance/               # Performance-Tests
+?   ??? README.md                  # Test-Dokumentation
+?
+??? README.md                      # Diese Datei
 ```
 
-### 6. Persistenz-Strategien
+## ?? Hauptfunktionen
 
-Flexibles Persistenz-System via Strategy-Pattern:
+### Globale vs. Lokale Stores
+- **Globale Stores**: Singleton-Instanzen, die über die gesamte Anwendung geteilt werden
+- **Lokale Stores**: Isolierte Instanzen für spezifische Anwendungsfälle (z.B. Dialog-/Formularkontext)
+- **Snapshots**: Erstellen Sie lokale Kopien von globalen Stores mit optionalen Filtern
 
-```csharp
-public class JsonFilePersistenceStrategy<T> : IPersistenceStrategy<T> where T : class
-{
-    public async Task<IReadOnlyList<T>> LoadAllAsync(CancellationToken ct)
-    {
-        // Load from JSON file
-    }
-    
-    public async Task SaveAllAsync(IReadOnlyList<T> items, CancellationToken ct)
-    {
-        // Save to JSON file
-    }
-}
-```
+### Persistierung
+- Asynchrone Lade- und Speichervorgänge
+- Auto-Load beim Bootstrap
+- Auto-Save bei Änderungen
+- Benutzerdefinierte Persistierungsstrategien
+- Fehlertoleranz und Race-Condition-Handling
 
-### 7. Parent-Child-Relations
+### Eltern-Kind-Beziehungen
+- Definieren Sie hierarchische Beziehungen zwischen Entitäten
+- Automatische Filterung von Kind-Elementen
+- Lazy Loading und Snapshot-Unterstützung
+- Refresh-Mechanismus für aktuelle Daten
 
-Verwalten von 1:n-Beziehungen mit automatischer Filterung:
+### Thread-Sicherheit
+- Alle Operationen sind thread-sicher
+- Lock-basierte Synchronisation
+- Optionale SynchronizationContext-Unterstützung für UI-Threads
+- Getestet mit Stress-Tests und Nebenläufigkeits-Szenarien
 
-```csharp
-var relation = new ParentChildRelationship<Customer, Order>(
-    stores,
-    customer,
-    (parent, child) => child.CustomerId == parent.Id);
+## ?? Technologien
 
-relation.UseGlobalDataSource();
-relation.Refresh(); // Lädt und filtert Childs
-```
+- **.NET 8** - Target Framework
+- **C# 12** - Programmiersprache
+- **xUnit** - Test-Framework
+- **Microsoft.Extensions.DependencyInjection** - Dependency Injection
 
----
+## ?? Weitere Dokumentation
 
-## ?? Dokumentation
+- [DataStores Projekt README](DataStores/README.md)
+  - [API Referenz](DataStores/Docs/API-Reference.md)
+  - [Formale Spezifikationen & Invarianten](DataStores/Docs/Formal-Specifications.md)
+  - [Verwendungsbeispiele](DataStores/Docs/Usage-Examples.md)
+  - [Persistierung Guide](DataStores/Docs/Persistence-Guide.md)
+  - [Beziehungen Guide](DataStores/Docs/Relations-Guide.md)
 
-### Projekt-Dokumentation
+- [DataStores.Tests Projekt README](DataStores.Tests/README.md)
 
-- **[Abstractions](DataStores.Abstractions/README.md)** - Interfaces & Exceptions
-- **[Runtime](DataStores.Runtime/README.md)** - InMemoryDataStore & Registry
-- **[Persistence](DataStores.Persistence/README.md)** - Persistenz-System
-- **[Relations](DataStores.Relations/README.md)** - Beziehungs-Management
-- **[Bootstrap](DataStores.Bootstrap/README.md)** - DI & Initialization
+## ?? Beitragen
 
-### API-Referenzen
-
-Jedes Projekt hat eine vollständige API-Dokumentation im `Docs/`-Ordner:
-
-- [Abstractions API](DataStores.Abstractions/Docs/API.md)
-- [Runtime API](DataStores.Runtime/Docs/API.md)
-- [Persistence API](DataStores.Persistence/Docs/API.md)
-- [Relations API](DataStores.Relations/Docs/API.md)
-- [Bootstrap API](DataStores.Bootstrap/Docs/API.md)
-
-### Guides & Tutorials
-
-- [Getting Started Guide](Docs/GettingStarted.md)
-- [Advanced Usage](Docs/AdvancedUsage.md)
-- [Best Practices](Docs/BestPractices.md)
-- [Migration Guide](Docs/MigrationGuide.md)
-
----
-
-## ?? Tests
-
-Die Solution hat eine umfassende Test-Suite:
-
-- **212 Tests** (100% bestanden)
-- **~98% Code Coverage**
-- **Performance-Tests** für Large Datasets
-- **Stress-Tests** für Concurrent-Szenarien
-- **Integration-Tests** für End-to-End-Workflows
-
-Siehe [Test-Report](DataStores.Tests/COMPLETE_REPORT.md) für Details.
-
-### Tests ausführen
-
-```bash
-dotnet test DataStores.Tests/DataStores.Tests.csproj
-```
-
-### Coverage-Report generieren
-
-```bash
-dotnet test /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
-```
-
----
-
-## ?? Beispiele
-
-### Beispiel 1: Einfacher Store
-
-```csharp
-// Setup
-var services = new ServiceCollection();
-services.AddDataStoresCore();
-
-var provider = services.BuildServiceProvider();
-var stores = provider.GetRequiredService<IDataStores>();
-
-// Lokalen Store erstellen
-var todoStore = stores.CreateLocal<TodoItem>();
-
-// Items hinzufügen
-todoStore.Add(new TodoItem { Id = 1, Title = "Learn DataStores" });
-todoStore.Add(new TodoItem { Id = 2, Title = "Build App" });
-
-// Abfragen
-var allTodos = todoStore.Items;
-var contains = todoStore.Contains(new TodoItem { Id = 1 });
-```
-
-### Beispiel 2: Mit Persistenz
-
-```csharp
-// Registrar definieren
-public class TodoRegistrar : IDataStoreRegistrar
-{
-    public void Register(IGlobalStoreRegistry registry, IServiceProvider sp)
-    {
-        var strategy = new JsonFilePersistenceStrategy<TodoItem>("todos.json");
-        var innerStore = new InMemoryDataStore<TodoItem>();
-        var decorator = new PersistentStoreDecorator<TodoItem>(
-            innerStore, strategy, autoLoad: true, autoSaveOnChange: true);
-        
-        registry.RegisterGlobal(decorator);
-    }
-}
-
-// Bootstrap
-services.AddDataStoreRegistrar<TodoRegistrar>();
-await DataStoreBootstrap.RunAsync(provider);
-
-// Verwenden - Daten werden automatisch geladen & gespeichert
-var todoStore = stores.GetGlobal<TodoItem>();
-todoStore.Add(new TodoItem { Id = 3, Title = "Persist Data" }); // Auto-Save!
-```
-
-### Beispiel 3: Parent-Child mit WPF
-
-```csharp
-// ViewModel
-public class CustomerViewModel
-{
-    private readonly IDataStores _stores;
-    private ParentChildRelationship<Customer, Order> _orders;
-    
-    public ObservableCollection<Order> Orders { get; }
-    
-    public CustomerViewModel(IDataStores stores, Customer customer)
-    {
-        _stores = stores;
-        Orders = new ObservableCollection<Order>();
-        
-        // Setup Relation mit UI-Thread-Context
-        _orders = new ParentChildRelationship<Customer, Order>(
-            _stores,
-            customer,
-            (p, c) => c.CustomerId == p.Id);
-        
-        _orders.UseGlobalDataSource();
-        _orders.Childs.Changed += OnOrdersChanged;
-        _orders.Refresh();
-    }
-    
-    private void OnOrdersChanged(object? sender, DataStoreChangedEventArgs<Order> e)
-    {
-        Application.Current.Dispatcher.Invoke(() =>
-        {
-            // Update UI-bound collection
-            Orders.Clear();
-            foreach (var order in _orders.Childs.Items)
-            {
-                Orders.Add(order);
-            }
-        });
-    }
-}
-```
-
----
-
-## ??? Build & Development
-
-### Voraussetzungen
-
-- .NET 8 SDK
-- Visual Studio 2022 oder VS Code
-
-### Build
-
-```bash
-dotnet build DataStores.sln
-```
-
-### Tests ausführen
-
-```bash
-dotnet test
-```
-
-### NuGet-Pakete erstellen
-
-```bash
-dotnet pack -c Release
-```
-
----
-
-## ?? Contributing
-
-Contributions sind willkommen! Bitte beachten Sie:
-
-1. **Tests schreiben** - Neue Features benötigen Tests
-2. **Dokumentation** - XML-Kommentare auf Deutsch
-3. **Code-Style** - Befolgen Sie die bestehenden Konventionen
-4. **Pull Requests** - Beschreiben Sie Ihre Änderungen
-
----
-
-## ?? Versionshistorie
-
-### Version 1.0.0 (2025-12-19)
-
-- ? Initial Release
-- ? InMemoryDataStore mit Thread-Safety
-- ? Global & Local Store Management
-- ? Persistenz-System
-- ? Parent-Child-Relations
-- ? DI-Integration
-- ? 212 Tests, ~98% Coverage
-
----
+Beiträge sind willkommen! Bitte stellen Sie sicher, dass:
+1. Alle Tests erfolgreich durchlaufen (`dotnet test`)
+2. Neue Funktionen mit Tests abgedeckt sind
+3. Code den bestehenden Stil folgt
+4. Deutsche Dokumentation hinzugefügt wird
 
 ## ?? Lizenz
 
-[MIT License](LICENSE) - Siehe LICENSE-Datei für Details.
+[Ihre Lizenz hier einfügen]
+
+## ?? Autor
+
+[Ihre Informationen hier einfügen]
 
 ---
 
-## ?? Danksagungen
-
-Diese Bibliothek wurde entwickelt mit Best Practices aus:
-- DataToolKit.Tests (Test-Patterns)
-- Clean Architecture-Prinzipien
-- Domain-Driven Design
-
----
-
-## ?? Support & Kontakt
-
-- **Issues**: [GitHub Issues](https://github.com/your-repo/DataStores/issues)
-- **Dokumentation**: [Wiki](https://github.com/your-repo/DataStores/wiki)
-- **Diskussionen**: [GitHub Discussions](https://github.com/your-repo/DataStores/discussions)
-
----
-
-**Made with ?? for .NET Developers**
+**Letzte Aktualisierung**: Januar 2025
