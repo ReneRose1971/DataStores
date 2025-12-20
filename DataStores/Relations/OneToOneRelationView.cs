@@ -12,7 +12,7 @@ public class OneToOneRelationView<TParent, TChild>
     where TParent : class
     where TChild : class
 {
-    private readonly ParentChildRelationshipView<TParent, TChild> _relationView;
+    private readonly OneToManyRelationView<TParent, TChild> _relationView;
     private readonly MultipleChildrenPolicy _policy;
 
     /// <summary>
@@ -35,7 +35,7 @@ public class OneToOneRelationView<TParent, TChild>
     {
         get
         {
-            var children = _relationView.Childs;
+            var children = _relationView.Children;
             
             if (children.Count == 0)
                 return null;
@@ -60,7 +60,7 @@ public class OneToOneRelationView<TParent, TChild>
     /// <param name="policy">The policy for handling multiple children.</param>
     /// <exception cref="ArgumentNullException">Thrown when relationView is null.</exception>
     public OneToOneRelationView(
-        ParentChildRelationshipView<TParent, TChild> relationView,
+        OneToManyRelationView<TParent, TChild> relationView,
         MultipleChildrenPolicy policy = MultipleChildrenPolicy.ThrowIfMultiple)
     {
         _relationView = relationView ?? throw new ArgumentNullException(nameof(relationView));

@@ -24,11 +24,11 @@ public class OneToOneRelationView_Tests
             parent => parent.Id,
             child => child.GroupId);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = Guid.NewGuid(), Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);
 
         // Assert
@@ -45,11 +45,11 @@ public class OneToOneRelationView_Tests
             parent => parent.Id,
             child => child.GroupId);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = Guid.NewGuid(), Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);
 
         // Assert
@@ -69,11 +69,11 @@ public class OneToOneRelationView_Tests
         var groupId = Guid.NewGuid();
         childStore.Add(new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Member1" });
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);
 
         // Assert
@@ -90,11 +90,11 @@ public class OneToOneRelationView_Tests
             parent => parent.Id,
             child => child.GroupId);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = Guid.NewGuid(), Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);
 
         // Assert
@@ -115,11 +115,11 @@ public class OneToOneRelationView_Tests
         var member = new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Member1" };
         childStore.Add(member);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);
 
         // Assert
@@ -147,11 +147,11 @@ public class OneToOneRelationView_Tests
             new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Member2" }
         });
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(
             relationView, 
             MultipleChildrenPolicy.ThrowIfMultiple);
@@ -179,11 +179,11 @@ public class OneToOneRelationView_Tests
             new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Member2" }
         });
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(
             relationView, 
             MultipleChildrenPolicy.ThrowIfMultiple);
@@ -213,11 +213,11 @@ public class OneToOneRelationView_Tests
         childStore.Add(member1);
         childStore.Add(member2);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(
             relationView, 
             MultipleChildrenPolicy.TakeFirst);
@@ -243,11 +243,11 @@ public class OneToOneRelationView_Tests
             new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Member2" }
         });
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(
             relationView, 
             MultipleChildrenPolicy.TakeFirst);
@@ -270,11 +270,11 @@ public class OneToOneRelationView_Tests
             parent => parent.Id,
             child => child.GroupId);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = Guid.NewGuid(), Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);
 
         // Act
@@ -299,11 +299,11 @@ public class OneToOneRelationView_Tests
         var member = new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Member1" };
         childStore.Add(member);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);
 
         // Act
@@ -331,11 +331,11 @@ public class OneToOneRelationView_Tests
             new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Member2" }
         });
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(
             relationView, 
             MultipleChildrenPolicy.ThrowIfMultiple);
@@ -365,11 +365,11 @@ public class OneToOneRelationView_Tests
         childStore.Add(member1);
         childStore.Add(member2);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(
             relationView, 
             MultipleChildrenPolicy.TakeFirst);
@@ -396,12 +396,12 @@ public class OneToOneRelationView_Tests
             parent => parent.Id,
             child => child.GroupId);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var groupId = Guid.NewGuid();
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);
 
         // Verify initially no child
@@ -431,11 +431,11 @@ public class OneToOneRelationView_Tests
         var member = new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Member1" };
         childStore.Add(member);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);
 
         // Verify initially has child
@@ -464,11 +464,11 @@ public class OneToOneRelationView_Tests
         var member = new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Member1" };
         childStore.Add(member);
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);
 
         // Verify initially has child
@@ -511,11 +511,11 @@ public class OneToOneRelationView_Tests
             new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Member2" }
         });
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relationView = service.GetRelation(group);
+        var relationView = service.GetOneToManyRelation(group);
         
         // Act - Use default constructor (no policy specified)
         var oneToOne = new OneToOneRelationView<Group, Member>(relationView);

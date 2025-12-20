@@ -1,18 +1,23 @@
 using System.Collections.ObjectModel;
-using System.Collections.Specialized;
-using System.ComponentModel;
 using DataStores.Abstractions;
+using DataStores.Persistence;
 
 namespace DataStores.Relations;
 
 /// <summary>
-/// Service that manages dynamic parent-child relationships.
-/// Automatically tracks changes in child stores and property changes in child entities.
+/// Service zur Verwaltung dynamischer 1:n und 1:1 Beziehungen.
+/// Überwacht automatisch Änderungen in Child-Stores und PropertyChanged-Events in Child-Entities.
 /// </summary>
-/// <typeparam name="TParent">The parent entity type.</typeparam>
-/// <typeparam name="TChild">The child entity type. Must implement INotifyPropertyChanged for dynamic tracking.</typeparam>
-/// <typeparam name="TKey">The key type used for matching.</typeparam>
-public class ParentChildRelationService<TParent, TChild, TKey> : IDisposable
+/// <typeparam name="TParent">Der Parent-Entity-Typ.</typeparam>
+/// <typeparam name="TChild">Der Child-Entity-Typ. Muss INotifyPropertyChanged implementieren für dynamisches Tracking.</typeparam>
+/// <typeparam name="TKey">Der Schlüssel-Typ für das Matching.</typeparam>
+/// <remarks>
+/// <para>
+/// Verwendet den <see cref="PropertyChangedBinder{T}"/> für idempotentes PropertyChanged-Tracking.
+/// Doppelbindungen werden automatisch verhindert.
+/// </para>
+/// </remarks>
+public class RelationViewService<TParent, TChild, TKey> : IRelationViewService<TParent, TChild, TKey>
     where TParent : class
     where TChild : class
     where TKey : notnull
@@ -20,21 +25,22 @@ public class ParentChildRelationService<TParent, TChild, TKey> : IDisposable
     private readonly IDataStore<TParent> _parentStore;
     private readonly IDataStore<TChild> _childStore;
     private readonly RelationDefinition<TParent, TChild, TKey> _definition;
+    private readonly PropertyChangedBinder<TChild> _propertyChangedBinder;
     
     private readonly Dictionary<TKey, ObservableCollection<TChild>> _childrenByParentKey = new();
     private readonly Dictionary<TChild, TKey> _trackedChildKeys = new();
-    private readonly Dictionary<TParent, ParentChildRelationshipView<TParent, TChild>> _viewCache = new();
+    private readonly Dictionary<TParent, OneToManyRelationView<TParent, TChild>> _viewCache = new();
     
     private bool _disposed;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ParentChildRelationService{TParent, TChild, TKey}"/> class.
+    /// Initialisiert eine neue Instanz der <see cref="RelationViewService{TParent, TChild, TKey}"/> Klasse.
     /// </summary>
-    /// <param name="parentStore">The data store containing parent entities.</param>
-    /// <param name="childStore">The data store containing child entities.</param>
-    /// <param name="definition">The relation definition specifying key extraction.</param>
-    /// <exception cref="ArgumentNullException">Thrown when any parameter is null.</exception>
-    public ParentChildRelationService(
+    /// <param name="parentStore">Der DataStore mit den Parent-Entities.</param>
+    /// <param name="childStore">Der DataStore mit den Child-Entities.</param>
+    /// <param name="definition">Die Relation-Definition für die Schlüssel-Extraktion.</param>
+    /// <exception cref="ArgumentNullException">Wird ausgelöst, wenn ein Parameter null ist.</exception>
+    public RelationViewService(
         IDataStore<TParent> parentStore,
         IDataStore<TChild> childStore,
         RelationDefinition<TParent, TChild, TKey> definition)
@@ -43,16 +49,17 @@ public class ParentChildRelationService<TParent, TChild, TKey> : IDisposable
         _childStore = childStore ?? throw new ArgumentNullException(nameof(childStore));
         _definition = definition ?? throw new ArgumentNullException(nameof(definition));
 
+        // PropertyChangedBinder für automatisches, idempotentes Tracking
+        _propertyChangedBinder = new PropertyChangedBinder<TChild>(
+            enabled: true,
+            onEntityChanged: OnChildPropertyChanged);
+
         SubscribeToChildStore();
         InitializeExistingChildren();
     }
 
-    /// <summary>
-    /// Gets or creates a relationship view for the specified parent.
-    /// </summary>
-    /// <param name="parent">The parent entity.</param>
-    /// <returns>A view of the parent-child relationship.</returns>
-    public ParentChildRelationshipView<TParent, TChild> GetRelation(TParent parent)
+    /// <inheritdoc/>
+    public OneToManyRelationView<TParent, TChild> GetOneToManyRelation(TParent parent)
     {
         if (parent == null)
             throw new ArgumentNullException(nameof(parent));
@@ -64,20 +71,31 @@ public class ParentChildRelationService<TParent, TChild, TKey> : IDisposable
         var childCollection = GetOrCreateChildCollection(parentKey);
         var readOnlyCollection = new ReadOnlyObservableCollection<TChild>(childCollection);
         
-        var view = new ParentChildRelationshipView<TParent, TChild>(parent, readOnlyCollection);
+        var view = new OneToManyRelationView<TParent, TChild>(parent, readOnlyCollection);
         _viewCache[parent] = view;
         
         return view;
     }
 
-    /// <summary>
-    /// Gets the read-only collection of children for the specified parent.
-    /// </summary>
-    /// <param name="parent">The parent entity.</param>
-    /// <returns>A read-only observable collection of children.</returns>
+    /// <inheritdoc/>
+    public OneToOneRelationView<TParent, TChild> GetOneToOneRelation(
+        TParent parent,
+        MultipleChildrenPolicy policy = MultipleChildrenPolicy.ThrowIfMultiple)
+    {
+        if (parent == null)
+            throw new ArgumentNullException(nameof(parent));
+
+        // Holt die zugrundeliegende 1:n View (gecacht)
+        var oneToManyView = GetOneToManyRelation(parent);
+        
+        // Erstellt eine neue 1:1 View (NICHT gecacht, da unterschiedliche Policies möglich)
+        return new OneToOneRelationView<TParent, TChild>(oneToManyView, policy);
+    }
+
+    /// <inheritdoc/>
     public ReadOnlyObservableCollection<TChild> GetChildren(TParent parent)
     {
-        return GetRelation(parent).Childs;
+        return GetOneToManyRelation(parent).Children;
     }
 
     private void SubscribeToChildStore()
@@ -136,12 +154,15 @@ public class ParentChildRelationService<TParent, TChild, TKey> : IDisposable
         }
 
         _trackedChildKeys[child] = childKey;
-        SubscribeToChildPropertyChanged(child);
+        
+        // PropertyChangedBinder: Idempotentes Attach (verhindert Doppelbindungen)
+        _propertyChangedBinder.Attach(child);
     }
 
     private void RemoveChildFromIndex(TChild child)
     {
-        UnsubscribeFromChildPropertyChanged(child);
+        // PropertyChangedBinder: Explizites Detach
+        _propertyChangedBinder.Detach(child);
 
         if (_trackedChildKeys.TryGetValue(child, out var oldKey))
         {
@@ -155,10 +176,8 @@ public class ParentChildRelationService<TParent, TChild, TKey> : IDisposable
 
     private void ClearAllChildren()
     {
-        foreach (var child in _trackedChildKeys.Keys.ToList())
-        {
-            UnsubscribeFromChildPropertyChanged(child);
-        }
+        // PropertyChangedBinder: Alle Bindings auf einmal entfernen
+        _propertyChangedBinder.DetachAll();
 
         _trackedChildKeys.Clear();
 
@@ -178,27 +197,8 @@ public class ParentChildRelationService<TParent, TChild, TKey> : IDisposable
         return collection;
     }
 
-    private void SubscribeToChildPropertyChanged(TChild child)
+    private void OnChildPropertyChanged(TChild child)
     {
-        if (child is INotifyPropertyChanged notifyPropertyChanged)
-        {
-            notifyPropertyChanged.PropertyChanged += OnChildPropertyChanged;
-        }
-    }
-
-    private void UnsubscribeFromChildPropertyChanged(TChild child)
-    {
-        if (child is INotifyPropertyChanged notifyPropertyChanged)
-        {
-            notifyPropertyChanged.PropertyChanged -= OnChildPropertyChanged;
-        }
-    }
-
-    private void OnChildPropertyChanged(object? sender, PropertyChangedEventArgs e)
-    {
-        if (sender is not TChild child)
-            return;
-
         if (!_trackedChildKeys.TryGetValue(child, out var oldKey))
             return;
 
@@ -207,6 +207,7 @@ public class ParentChildRelationService<TParent, TChild, TKey> : IDisposable
         if (EqualityComparer<TKey>.Default.Equals(oldKey, newKey))
             return;
 
+        // Key hat sich geändert - Child zwischen Collections verschieben
         if (_childrenByParentKey.TryGetValue(oldKey, out var oldCollection))
         {
             oldCollection.Remove(child);
@@ -239,7 +240,7 @@ public class ParentChildRelationService<TParent, TChild, TKey> : IDisposable
     }
 
     /// <summary>
-    /// Disposes the service and unsubscribes from all events.
+    /// Gibt den Service frei und meldet alle Event-Subscriptions ab.
     /// </summary>
     public void Dispose()
     {
@@ -248,10 +249,8 @@ public class ParentChildRelationService<TParent, TChild, TKey> : IDisposable
 
         _childStore.Changed -= OnChildStoreChanged;
 
-        foreach (var child in _trackedChildKeys.Keys.ToList())
-        {
-            UnsubscribeFromChildPropertyChanged(child);
-        }
+        // PropertyChangedBinder übernimmt das komplette Cleanup
+        _propertyChangedBinder.Dispose();
 
         _trackedChildKeys.Clear();
         _childrenByParentKey.Clear();

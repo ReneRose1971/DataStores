@@ -8,7 +8,7 @@ using Xunit;
 namespace DataStores.Tests.Unit.Relations;
 
 /// <summary>
-/// Tests for sorted children functionality in ParentChildRelationService.
+/// Tests for sorted children functionality in RelationViewService.
 /// </summary>
 [Trait("Category", "Unit")]
 public class ParentChildRelationService_Sorting_Tests
@@ -35,12 +35,12 @@ public class ParentChildRelationService_Sorting_Tests
             child => child.GroupId,
             childComparer: new MemberNameComparer());
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var groupId = Guid.NewGuid();
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relation = service.GetRelation(group);
+        var relation = service.GetOneToManyRelation(group);
 
         // Act - Add members in random order
         childStore.Add(new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Charlie" });
@@ -48,10 +48,10 @@ public class ParentChildRelationService_Sorting_Tests
         childStore.Add(new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Bob" });
 
         // Assert - Should be sorted by name
-        Assert.Equal(3, relation.Childs.Count);
-        Assert.Equal("Alice", relation.Childs[0].Name);
-        Assert.Equal("Bob", relation.Childs[1].Name);
-        Assert.Equal("Charlie", relation.Childs[2].Name);
+        Assert.Equal(3, relation.Children.Count);
+        Assert.Equal("Alice", relation.Children[0].Name);
+        Assert.Equal("Bob", relation.Children[1].Name);
+        Assert.Equal("Charlie", relation.Children[2].Name);
     }
 
     [Fact]
@@ -65,12 +65,12 @@ public class ParentChildRelationService_Sorting_Tests
             child => child.GroupId,
             childComparer: new MemberNameComparer());
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var groupId = Guid.NewGuid();
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relation = service.GetRelation(group);
+        var relation = service.GetOneToManyRelation(group);
 
         // Act - Bulk add in random order
         childStore.AddRange(new[]
@@ -81,10 +81,10 @@ public class ParentChildRelationService_Sorting_Tests
         });
 
         // Assert - Should be sorted by name
-        Assert.Equal(3, relation.Childs.Count);
-        Assert.Equal("Anna", relation.Childs[0].Name);
-        Assert.Equal("Mike", relation.Childs[1].Name);
-        Assert.Equal("Zara", relation.Childs[2].Name);
+        Assert.Equal(3, relation.Children.Count);
+        Assert.Equal("Anna", relation.Children[0].Name);
+        Assert.Equal("Mike", relation.Children[1].Name);
+        Assert.Equal("Zara", relation.Children[2].Name);
     }
 
     [Fact]
@@ -108,16 +108,16 @@ public class ParentChildRelationService_Sorting_Tests
             new Member { Id = Guid.NewGuid(), GroupId = group1Id, Name = "Charlie" }
         });
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group1 = new Group { Id = group1Id, Name = "Group1" };
-        var relation1 = service.GetRelation(group1);
+        var relation1 = service.GetOneToManyRelation(group1);
 
         // Verify initial sorted state for group1
-        Assert.Equal(2, relation1.Childs.Count);
-        Assert.Equal("Alice", relation1.Childs[0].Name);
-        Assert.Equal("Charlie", relation1.Childs[1].Name);
+        Assert.Equal(2, relation1.Children.Count);
+        Assert.Equal("Alice", relation1.Children[0].Name);
+        Assert.Equal("Charlie", relation1.Children[1].Name);
 
         var davidMember = childStore.Items.First(m => m.Name == "David");
 
@@ -125,10 +125,10 @@ public class ParentChildRelationService_Sorting_Tests
         davidMember.GroupId = group1Id;
 
         // Assert - Should maintain sorted order
-        Assert.Equal(3, relation1.Childs.Count);
-        Assert.Equal("Alice", relation1.Childs[0].Name);
-        Assert.Equal("Charlie", relation1.Childs[1].Name);
-        Assert.Equal("David", relation1.Childs[2].Name);
+        Assert.Equal(3, relation1.Children.Count);
+        Assert.Equal("Alice", relation1.Children[0].Name);
+        Assert.Equal("Charlie", relation1.Children[1].Name);
+        Assert.Equal("David", relation1.Children[2].Name);
     }
 
     [Fact]
@@ -142,12 +142,12 @@ public class ParentChildRelationService_Sorting_Tests
             child => child.GroupId,
             childComparer: null); // No sorting
         
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var groupId = Guid.NewGuid();
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relation = service.GetRelation(group);
+        var relation = service.GetOneToManyRelation(group);
 
         // Act - Add in specific order
         childStore.Add(new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Zara" });
@@ -155,10 +155,10 @@ public class ParentChildRelationService_Sorting_Tests
         childStore.Add(new Member { Id = Guid.NewGuid(), GroupId = groupId, Name = "Mike" });
 
         // Assert - Should maintain insertion order (not sorted)
-        Assert.Equal(3, relation.Childs.Count);
-        Assert.Equal("Zara", relation.Childs[0].Name);
-        Assert.Equal("Anna", relation.Childs[1].Name);
-        Assert.Equal("Mike", relation.Childs[2].Name);
+        Assert.Equal(3, relation.Children.Count);
+        Assert.Equal("Zara", relation.Children[0].Name);
+        Assert.Equal("Anna", relation.Children[1].Name);
+        Assert.Equal("Mike", relation.Children[2].Name);
     }
 
     [Fact]
@@ -182,16 +182,16 @@ public class ParentChildRelationService_Sorting_Tests
             childComparer: new MemberNameComparer());
 
         // Act - Create service AFTER children exist
-        var service = new ParentChildRelationService<Group, Member, Guid>(
+        var service = new RelationViewService<Group, Member, Guid>(
             parentStore, childStore, definition);
 
         var group = new Group { Id = groupId, Name = "Group1" };
-        var relation = service.GetRelation(group);
+        var relation = service.GetOneToManyRelation(group);
 
         // Assert - Existing children should be sorted
-        Assert.Equal(3, relation.Childs.Count);
-        Assert.Equal("Adam", relation.Childs[0].Name);
-        Assert.Equal("Molly", relation.Childs[1].Name);
-        Assert.Equal("Zoe", relation.Childs[2].Name);
+        Assert.Equal(3, relation.Children.Count);
+        Assert.Equal("Adam", relation.Children[0].Name);
+        Assert.Equal("Molly", relation.Children[1].Name);
+        Assert.Equal("Zoe", relation.Children[2].Name);
     }
 }

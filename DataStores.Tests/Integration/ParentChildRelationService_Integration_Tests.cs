@@ -11,7 +11,7 @@ namespace DataStores.Tests.Integration;
 
 /// <summary>
 /// Integration tests demonstrating the new service-centric relation architecture.
-/// Shows how ParentChildRelationService, Views, and OneToOne work together.
+/// Shows how RelationViewService, Views, and OneToOne work together.
 /// </summary>
 [Trait("Category", "Integration")]
 public class ParentChildRelationService_Integration_Tests
@@ -160,7 +160,7 @@ public class ParentChildRelationService_Integration_Tests
             parent => parent.Id,
             child => child.OrganizationId);
 
-        var orgDeptService = new ParentChildRelationService<Organization, Department, Guid>(
+        var orgDeptService = new RelationViewService<Organization, Department, Guid>(
             orgStore, deptStore, orgDeptDefinition);
 
         // Department -> Employees (1:n)
@@ -168,17 +168,17 @@ public class ParentChildRelationService_Integration_Tests
             parent => parent.Id,
             child => child.DepartmentId);
 
-        var deptEmpService = new ParentChildRelationService<Department, Employee, Guid>(
+        var deptEmpService = new RelationViewService<Department, Employee, Guid>(
             deptStore, empStore, deptEmpDefinition);
 
         // ====================================================================
         // PHASE 5: Access Relations
         // ====================================================================
         var acme = orgStore.Items.First(o => o.Id == acmeId);
-        var acmeRelation = orgDeptService.GetRelation(acme);
+        var acmeRelation = orgDeptService.GetOneToManyRelation(acme);
 
-        Assert.Equal(2, acmeRelation.Childs.Count);
-        Assert.All(acmeRelation.Childs, d => Assert.Equal(acmeId, d.OrganizationId));
+        Assert.Equal(2, acmeRelation.Children.Count);
+        Assert.All(acmeRelation.Children, d => Assert.Equal(acmeId, d.OrganizationId));
 
         var acmeIt = deptStore.Items.First(d => d.Id == acmeItId);
         var acmeItEmployees = deptEmpService.GetChildren(acmeIt);
@@ -230,15 +230,15 @@ public class ParentChildRelationService_Integration_Tests
         deptStore.Remove(acmeHr);
 
         // Departments relation should update
-        Assert.Single(acmeRelation.Childs);
-        Assert.DoesNotContain(acmeRelation.Childs, d => d.Name == "HR");
+        Assert.Single(acmeRelation.Children);
+        Assert.DoesNotContain(acmeRelation.Children, d => d.Name == "HR");
 
         // ====================================================================
         // PHASE 9: OneToOne View
         // ====================================================================
         // Organization might have one "main" department (using 1:1 view)
         var globex = orgStore.Items.First(o => o.Id == globexId);
-        var globexRelation = orgDeptService.GetRelation(globex);
+        var globexRelation = orgDeptService.GetOneToManyRelation(globex);
         var globexMainDept = new OneToOneRelationView<Organization, Department>(
             globexRelation, 
             MultipleChildrenPolicy.TakeFirst);
@@ -308,7 +308,7 @@ public class ParentChildRelationService_Integration_Tests
             childComparer: Comparer<Employee>.Create((x, y) => 
                 string.Compare(x.Name, y.Name, StringComparison.Ordinal)));
 
-        var deptEmpService = new ParentChildRelationService<Department, Employee, Guid>(
+        var deptEmpService = new RelationViewService<Department, Employee, Guid>(
             deptStore, empStore, deptEmpDefinition);
 
         // Act
