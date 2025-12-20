@@ -75,10 +75,10 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
         // PHASE 3: Business Logic - Bestellungen verwalten
         // ====================================================================
 
-        // 9. Neue Bestellungen erstellen
+        // 9. Neue Bestellungen erstellen (Id = 0 für neue Entities!)
         var order1 = new OrderDto
         {
-            Id = 1,
+            Id = 0, // LiteDB vergibt automatisch ID
             OrderNumber = "ORD-2024-001",
             CustomerId = 100,
             CustomerName = "Tech GmbH",
@@ -90,7 +90,7 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
 
         var order2 = new OrderDto
         {
-            Id = 2,
+            Id = 0, // LiteDB vergibt automatisch ID
             OrderNumber = "ORD-2024-002",
             CustomerId = 101,
             CustomerName = "Software AG",
@@ -102,7 +102,7 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
 
         var order3 = new OrderDto
         {
-            Id = 3,
+            Id = 0, // LiteDB vergibt automatisch ID
             OrderNumber = "ORD-2024-003",
             CustomerId = 100,
             CustomerName = "Tech GmbH",
@@ -117,6 +117,9 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
         orderStore.AddRange(new[] { order2, order3 });
 
         Assert.Equal(3, orderStore.Items.Count);
+        
+        // Nach dem Hinzufügen sollten alle Items IDs von LiteDB erhalten haben
+        Assert.All(orderStore.Items, o => Assert.True(o.Id > 0, "LiteDB sollte IDs vergeben haben"));
 
         // 11. Geschäftslogik: Bestellungen nach Kunde filtern
         var techGmbHOrders = orderStore.Items
@@ -149,24 +152,24 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
         };
 
         // 15. Bestellstatus aktualisieren (simuliert durch Entfernen/Hinzufügen)
-        var orderToUpdate = orderStore.Items.First(o => o.Id == 1);
+        var orderToUpdate = orderStore.Items.First(o => o.OrderNumber == "ORD-2024-001");
         orderStore.Remove(orderToUpdate);
         
         var updatedOrder = new OrderDto
         {
-            Id = orderToUpdate.Id,
+            Id = orderToUpdate.Id, // Behält die von LiteDB vergebene ID
             OrderNumber = orderToUpdate.OrderNumber,
             CustomerId = orderToUpdate.CustomerId,
             CustomerName = orderToUpdate.CustomerName,
             TotalAmount = orderToUpdate.TotalAmount,
-            Status = OrderStatus.Processing,
+            Status = OrderStatus.Processing, // Status geändert!
             OrderDate = orderToUpdate.OrderDate,
             Items = orderToUpdate.Items
         };
         orderStore.Add(updatedOrder);
 
         // 16. Bestellung stornieren (entfernen)
-        var orderToCancel = orderStore.Items.First(o => o.Id == 3);
+        var orderToCancel = orderStore.Items.First(o => o.OrderNumber == "ORD-2024-003");
         orderStore.Remove(orderToCancel);
 
         Assert.Equal(2, orderStore.Items.Count);
@@ -189,13 +192,13 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
         
         Assert.Equal(2, savedOrders.Count);
         
-        var savedOrder1 = savedOrders.FirstOrDefault(o => o.Id == 1);
-        if (savedOrder1 != null)
-        {
-            Assert.Equal(OrderStatus.Processing, savedOrder1.Status);
-        }
+        // Finde die aktualisierte Bestellung (nicht mehr nach Id=1, da LiteDB IDs vergibt)
+        var savedOrder1 = savedOrders.FirstOrDefault(o => o.OrderNumber == "ORD-2024-001");
+        Assert.NotNull(savedOrder1);
+        Assert.Equal(OrderStatus.Processing, savedOrder1!.Status);
         
-        Assert.DoesNotContain(savedOrders, o => o.Id == 3);
+        // Stornierte Bestellung sollte nicht mehr vorhanden sein
+        Assert.DoesNotContain(savedOrders, o => o.OrderNumber == "ORD-2024-003");
     }
 
     /// <summary>
@@ -221,9 +224,10 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
         var orderStore = dataStores.GetGlobal<OrderDto>();
         var invoiceStore = dataStores.GetGlobal<InvoiceDto>();
 
-        orderStore.Add(new OrderDto
+        // Neue Entities mit Id = 0 erstellen
+        var order = new OrderDto
         {
-            Id = 1,
+            Id = 0, // LiteDB vergibt automatisch ID
             OrderNumber = "ORD-001",
             CustomerId = 100,
             CustomerName = "Kunde A",
@@ -231,17 +235,24 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
             Status = OrderStatus.Completed,
             OrderDate = DateTime.UtcNow,
             Items = new List<string> { "Produkt 1" }
-        });
+        };
+        
+        orderStore.Add(order);
+
+        // Nach dem Add sollte LiteDB eine ID vergeben haben
+        Assert.True(order.Id > 0, "LiteDB sollte eine ID vergeben haben");
+        var assignedOrderId = order.Id;
 
         invoiceStore.AddRange(new[]
         {
-            new InvoiceDto { Id = 1, InvoiceNumber = "INV-001", OrderId = 1, Amount = 1000m, IsPaid = true },
-            new InvoiceDto { Id = 2, InvoiceNumber = "INV-002", OrderId = 1, Amount = 500m, IsPaid = false }
+            new InvoiceDto { Id = 0, InvoiceNumber = "INV-001", OrderId = assignedOrderId, Amount = 1000m, IsPaid = true },
+            new InvoiceDto { Id = 0, InvoiceNumber = "INV-002", OrderId = assignedOrderId, Amount = 500m, IsPaid = false }
         });
 
         // Assert
         Assert.Single(orderStore.Items);
         Assert.Equal(2, invoiceStore.Items.Count);
+        Assert.All(invoiceStore.Items, i => Assert.True(i.Id > 0, "LiteDB sollte IDs vergeben haben"));
 
         // Wait for auto-save
         await Task.Delay(200);
@@ -261,9 +272,8 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
     // Helper Classes - DTOs
     // ====================================================================
 
-    private class OrderDto
+    private class OrderDto : EntityBase
     {
-        public int Id { get; set; }
         public string OrderNumber { get; set; } = "";
         public int CustomerId { get; set; }
         public string CustomerName { get; set; } = "";
@@ -271,15 +281,38 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
         public OrderStatus Status { get; set; }
         public DateTime OrderDate { get; set; }
         public List<string> Items { get; set; } = new();
+
+        public override string ToString() => 
+            $"Order #{Id}: {OrderNumber} - {CustomerName} ({TotalAmount:C})";
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is not OrderDto other) return false;
+            if (Id > 0 && other.Id > 0) return Id == other.Id;
+            return ReferenceEquals(this, other);
+        }
+
+        public override int GetHashCode() => Id > 0 ? Id : HashCode.Combine(OrderNumber, CustomerId);
     }
 
-    private class InvoiceDto
+    private class InvoiceDto : EntityBase
     {
-        public int Id { get; set; }
         public string InvoiceNumber { get; set; } = "";
         public int OrderId { get; set; }
         public decimal Amount { get; set; }
         public bool IsPaid { get; set; }
+
+        public override string ToString() => 
+            $"Invoice #{Id}: {InvoiceNumber} - {Amount:C} (Paid: {IsPaid})";
+
+        public override bool Equals(object? obj)
+        {
+            if (obj is not InvoiceDto other) return false;
+            if (Id > 0 && other.Id > 0) return Id == other.Id;
+            return ReferenceEquals(this, other);
+        }
+
+        public override int GetHashCode() => Id > 0 ? Id : HashCode.Combine(InvoiceNumber, OrderId);
     }
 
     private enum OrderStatus

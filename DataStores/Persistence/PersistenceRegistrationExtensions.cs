@@ -66,7 +66,7 @@ public static class PersistenceRegistrationExtensions
     /// <summary>
     /// Registriert einen globalen DataStore mit LiteDB-Persistierung.
     /// </summary>
-    /// <typeparam name="T">Der Typ der Elemente im Store.</typeparam>
+    /// <typeparam name="T">Der Typ der Elemente im Store. Muss von <see cref="EntityBase"/> erben.</typeparam>
     /// <param name="registry">Die GlobalStoreRegistry-Instanz.</param>
     /// <param name="databasePath">Der vollständige Pfad zur LiteDB-Datenbankdatei.</param>
     /// <param name="collectionName">
@@ -106,7 +106,7 @@ public static class PersistenceRegistrationExtensions
         bool autoLoad = true,
         bool autoSave = true,
         IEqualityComparer<T>? comparer = null,
-        SynchronizationContext? synchronizationContext = null) where T : class
+        SynchronizationContext? synchronizationContext = null) where T : EntityBase
     {
         if (registry == null)
             throw new ArgumentNullException(nameof(registry));

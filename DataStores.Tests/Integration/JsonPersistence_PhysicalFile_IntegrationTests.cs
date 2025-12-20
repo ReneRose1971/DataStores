@@ -1,5 +1,6 @@
 using DataStores.Persistence;
 using System.Text.Json;
+using TestHelper.DataStores.Models;
 using Xunit;
 
 namespace DataStores.Tests.Integration;
@@ -44,11 +45,11 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var filePath = Path.Combine(_testRoot, "test.json");
-        var strategy = new JsonFilePersistenceStrategy<TestItem>(filePath);
-        var items = new List<TestItem>
+        var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
+        var items = new List<TestDto>
         {
-            new() { Id = 1, Name = "Item1" },
-            new() { Id = 2, Name = "Item2" }
+            new("Item1", 10),
+            new("Item2", 20)
         };
 
         // Act
@@ -66,10 +67,10 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var filePath = Path.Combine(_testRoot, "valid.json");
-        var strategy = new JsonFilePersistenceStrategy<TestItem>(filePath);
-        var items = new List<TestItem>
+        var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
+        var items = new List<TestDto>
         {
-            new() { Id = 42, Name = "TestItem" }
+            new("TestItem", 42)
         };
 
         // Act
@@ -80,11 +81,11 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
         Assert.NotEmpty(json);
         
         // Verify it's deserializable
-        var deserialized = JsonSerializer.Deserialize<List<TestItem>>(json);
+        var deserialized = JsonSerializer.Deserialize<List<TestDto>>(json);
         Assert.NotNull(deserialized);
         Assert.Single(deserialized);
-        Assert.Equal(42, deserialized[0].Id);
         Assert.Equal("TestItem", deserialized[0].Name);
+        Assert.Equal(42, deserialized[0].Age);
     }
 
     [Fact]
@@ -93,8 +94,8 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
         // Arrange
         var nestedPath = Path.Combine(_testRoot, "nested", "deep", "folder");
         var filePath = Path.Combine(nestedPath, "test.json");
-        var strategy = new JsonFilePersistenceStrategy<TestItem>(filePath);
-        var items = new List<TestItem> { new() { Id = 1, Name = "Test" } };
+        var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
+        var items = new List<TestDto> { new("Test", 1) };
 
         // Ensure directory doesn't exist
         if (Directory.Exists(nestedPath))
@@ -115,27 +116,25 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var filePath = Path.Combine(_testRoot, "load.json");
-        var originalItems = new List<TestItem>
+        var originalItems = new List<TestDto>
         {
-            new() { Id = 10, Name = "LoadTest1" },
-            new() { Id = 20, Name = "LoadTest2" }
+            new("LoadTest1", 10),
+            new("LoadTest2", 20)
         };
 
         // Manually create JSON file
         var json = JsonSerializer.Serialize(originalItems);
         await File.WriteAllTextAsync(filePath, json);
 
-        var strategy = new JsonFilePersistenceStrategy<TestItem>(filePath);
+        var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
 
         // Act
         var loadedItems = await strategy.LoadAllAsync();
 
         // Assert
         Assert.Equal(2, loadedItems.Count);
-        Assert.Equal(10, loadedItems[0].Id);
-        Assert.Equal("LoadTest1", loadedItems[0].Name);
-        Assert.Equal(20, loadedItems[1].Id);
-        Assert.Equal("LoadTest2", loadedItems[1].Name);
+        Assert.Contains(loadedItems, i => i.Name == "LoadTest1" && i.Age == 10);
+        Assert.Contains(loadedItems, i => i.Name == "LoadTest2" && i.Age == 20);
     }
 
     [Fact]
@@ -143,7 +142,7 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var filePath = Path.Combine(_testRoot, "nonexistent.json");
-        var strategy = new JsonFilePersistenceStrategy<TestItem>(filePath);
+        var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
 
         // Act
         var items = await strategy.LoadAllAsync();
@@ -158,12 +157,12 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var filePath = Path.Combine(_testRoot, "roundtrip.json");
-        var strategy = new JsonFilePersistenceStrategy<TestItem>(filePath);
-        var originalItems = new List<TestItem>
+        var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
+        var originalItems = new List<TestDto>
         {
-            new() { Id = 100, Name = "Alpha" },
-            new() { Id = 200, Name = "Beta" },
-            new() { Id = 300, Name = "Gamma" }
+            new("Alpha", 100),
+            new("Beta", 200),
+            new("Gamma", 300)
         };
 
         // Act - Save
@@ -177,9 +176,9 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
 
         // Assert - Data matches
         Assert.Equal(3, loadedItems.Count);
-        Assert.Equal(originalItems[0].Id, loadedItems[0].Id);
-        Assert.Equal(originalItems[1].Name, loadedItems[1].Name);
-        Assert.Equal(originalItems[2].Id, loadedItems[2].Id);
+        Assert.Contains(loadedItems, i => i.Name == "Alpha" && i.Age == 100);
+        Assert.Contains(loadedItems, i => i.Name == "Beta" && i.Age == 200);
+        Assert.Contains(loadedItems, i => i.Name == "Gamma" && i.Age == 300);
     }
 
     [Fact]
@@ -187,13 +186,13 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var filePath = Path.Combine(_testRoot, "overwrite.json");
-        var strategy = new JsonFilePersistenceStrategy<TestItem>(filePath);
+        var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
 
-        var firstItems = new List<TestItem> { new() { Id = 1, Name = "First" } };
-        var secondItems = new List<TestItem>
+        var firstItems = new List<TestDto> { new("First", 1) };
+        var secondItems = new List<TestDto>
         {
-            new() { Id = 2, Name = "Second" },
-            new() { Id = 3, Name = "Third" }
+            new("Second", 2),
+            new("Third", 3)
         };
 
         // Act - Save first set
@@ -207,8 +206,8 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
         Assert.True(File.Exists(filePath));
         var loadedItems = await strategy.LoadAllAsync();
         Assert.Equal(2, loadedItems.Count);
-        Assert.Equal("Second", loadedItems[0].Name);
-        Assert.Equal("Third", loadedItems[1].Name);
+        Assert.Contains(loadedItems, i => i.Name == "Second");
+        Assert.Contains(loadedItems, i => i.Name == "Third");
     }
 
     [Fact]
@@ -216,8 +215,8 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var filePath = Path.Combine(_testRoot, "empty.json");
-        var strategy = new JsonFilePersistenceStrategy<TestItem>(filePath);
-        var emptyList = new List<TestItem>();
+        var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
+        var emptyList = new List<TestDto>();
 
         // Act
         await strategy.SaveAllAsync(emptyList);
@@ -235,7 +234,7 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
         var filePath = Path.Combine(_testRoot, "corrupted.json");
         await File.WriteAllTextAsync(filePath, "{ INVALID JSON }");
 
-        var strategy = new JsonFilePersistenceStrategy<TestItem>(filePath);
+        var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
 
         // Act
         var items = await strategy.LoadAllAsync();
@@ -251,11 +250,11 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
         var file1 = Path.Combine(_testRoot, "items1.json");
         var file2 = Path.Combine(_testRoot, "items2.json");
 
-        var strategy1 = new JsonFilePersistenceStrategy<TestItem>(file1);
-        var strategy2 = new JsonFilePersistenceStrategy<TestItem>(file2);
+        var strategy1 = new JsonFilePersistenceStrategy<TestDto>(file1);
+        var strategy2 = new JsonFilePersistenceStrategy<TestDto>(file2);
 
-        var items1 = new List<TestItem> { new() { Id = 1, Name = "File1" } };
-        var items2 = new List<TestItem> { new() { Id = 2, Name = "File2" } };
+        var items1 = new List<TestDto> { new("File1", 1) };
+        var items2 = new List<TestDto> { new("File2", 2) };
 
         // Act
         await strategy1.SaveAllAsync(items1);
@@ -270,11 +269,5 @@ public class JsonPersistence_PhysicalFile_IntegrationTests : IDisposable
 
         Assert.Equal("File1", loaded1[0].Name);
         Assert.Equal("File2", loaded2[0].Name);
-    }
-
-    private class TestItem
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = "";
     }
 }

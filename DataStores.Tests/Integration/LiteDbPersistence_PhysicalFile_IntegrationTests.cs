@@ -1,4 +1,5 @@
 using DataStores.Persistence;
+using TestHelper.DataStores.Models;
 using Xunit;
 
 namespace DataStores.Tests.Integration;
@@ -43,11 +44,11 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "test.db");
-        var strategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, "items");
-        var items = new List<TestItem>
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var items = new List<TestEntity>
         {
-            new() { Id = 1, Name = "Item1" },
-            new() { Id = 2, Name = "Item2" }
+            new() { Id = 0, Name = "Item1" },
+            new() { Id = 0, Name = "Item2" }
         };
 
         // Act
@@ -66,8 +67,8 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
         // Arrange
         var nestedPath = Path.Combine(_testRoot, "nested", "deep", "folder");
         var dbPath = Path.Combine(nestedPath, "test.db");
-        var strategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, "items");
-        var items = new List<TestItem> { new() { Id = 1, Name = "Test" } };
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var items = new List<TestEntity> { new() { Id = 0, Name = "Test" } };
 
         // Ensure directory doesn't exist
         if (Directory.Exists(nestedPath))
@@ -88,27 +89,28 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "load.db");
-        var strategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
 
-        var originalItems = new List<TestItem>
+        var originalItems = new List<TestEntity>
         {
-            new() { Id = 10, Name = "LoadTest1" },
-            new() { Id = 20, Name = "LoadTest2" }
+            new() { Id = 0, Name = "LoadTest1" },
+            new() { Id = 0, Name = "LoadTest2" }
         };
 
         // First save to create DB
         await strategy.SaveAllAsync(originalItems);
 
         // Create new strategy instance to test loading
-        var loadStrategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, "items");
+        var loadStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
 
         // Act
         var loadedItems = await loadStrategy.LoadAllAsync();
 
-        // Assert
+        // Assert - LiteDB has assigned IDs > 0
         Assert.Equal(2, loadedItems.Count);
-        Assert.Contains(loadedItems, i => i.Id == 10 && i.Name == "LoadTest1");
-        Assert.Contains(loadedItems, i => i.Id == 20 && i.Name == "LoadTest2");
+        Assert.All(loadedItems, item => Assert.True(item.Id > 0));
+        Assert.Contains(loadedItems, i => i.Name == "LoadTest1");
+        Assert.Contains(loadedItems, i => i.Name == "LoadTest2");
     }
 
     [Fact]
@@ -116,7 +118,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "nonexistent.db");
-        var strategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
 
         // Act
         var items = await strategy.LoadAllAsync();
@@ -130,12 +132,12 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "roundtrip.db");
-        var strategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, "items");
-        var originalItems = new List<TestItem>
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var originalItems = new List<TestEntity>
         {
-            new() { Id = 100, Name = "Alpha" },
-            new() { Id = 200, Name = "Beta" },
-            new() { Id = 300, Name = "Gamma" }
+            new() { Id = 0, Name = "Alpha" },
+            new() { Id = 0, Name = "Beta" },
+            new() { Id = 0, Name = "Gamma" }
         };
 
         // Act - Save
@@ -148,11 +150,12 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
         // Act - Load
         var loadedItems = await strategy.LoadAllAsync();
 
-        // Assert - Data matches
+        // Assert - Data matches, IDs assigned
         Assert.Equal(3, loadedItems.Count);
-        Assert.Contains(loadedItems, i => i.Id == 100 && i.Name == "Alpha");
-        Assert.Contains(loadedItems, i => i.Id == 200 && i.Name == "Beta");
-        Assert.Contains(loadedItems, i => i.Id == 300 && i.Name == "Gamma");
+        Assert.All(loadedItems, item => Assert.True(item.Id > 0));
+        Assert.Contains(loadedItems, i => i.Name == "Alpha");
+        Assert.Contains(loadedItems, i => i.Name == "Beta");
+        Assert.Contains(loadedItems, i => i.Name == "Gamma");
     }
 
     [Fact]
@@ -160,13 +163,13 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "overwrite.db");
-        var strategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
 
-        var firstItems = new List<TestItem> { new() { Id = 1, Name = "First" } };
-        var secondItems = new List<TestItem>
+        var firstItems = new List<TestEntity> { new() { Id = 0, Name = "First" } };
+        var secondItems = new List<TestEntity>
         {
-            new() { Id = 2, Name = "Second" },
-            new() { Id = 3, Name = "Third" }
+            new() { Id = 0, Name = "Second" },
+            new() { Id = 0, Name = "Third" }
         };
 
         // Act - Save first set
@@ -188,8 +191,8 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "empty.db");
-        var strategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, "items");
-        var emptyList = new List<TestItem>();
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var emptyList = new List<TestEntity>();
 
         // Act
         await strategy.SaveAllAsync(emptyList);
@@ -206,11 +209,11 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
         // Arrange
         var dbPath = Path.Combine(_testRoot, "multi-collection.db");
 
-        var strategy1 = new LiteDbPersistenceStrategy<TestItem>(dbPath, "collection1");
-        var strategy2 = new LiteDbPersistenceStrategy<TestItem>(dbPath, "collection2");
+        var strategy1 = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "collection1");
+        var strategy2 = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "collection2");
 
-        var items1 = new List<TestItem> { new() { Id = 1, Name = "Collection1" } };
-        var items2 = new List<TestItem> { new() { Id = 2, Name = "Collection2" } };
+        var items1 = new List<TestEntity> { new() { Id = 0, Name = "Collection1" } };
+        var items2 = new List<TestEntity> { new() { Id = 0, Name = "Collection2" } };
 
         // Act
         await strategy1.SaveAllAsync(items1);
@@ -234,10 +237,10 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "large.db");
-        var strategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
 
         var largeDataset = Enumerable.Range(1, 10000)
-            .Select(i => new TestItem { Id = i, Name = $"Item{i}" })
+            .Select(i => new TestEntity { Id = 0, Name = $"Item{i}" })
             .ToList();
 
         // Act
@@ -260,8 +263,8 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
         var dbPath = Path.Combine(_testRoot, "default-collection.db");
         
         // Strategy without explicit collection name
-        var strategy = new LiteDbPersistenceStrategy<TestItem>(dbPath);
-        var items = new List<TestItem> { new() { Id = 1, Name = "Test" } };
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath);
+        var items = new List<TestEntity> { new() { Id = 0, Name = "Test" } };
 
         // Act
         await strategy.SaveAllAsync(items);
@@ -271,7 +274,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
         Assert.Single(loadedItems);
 
         // Verify it used the type name by trying to load from explicit collection
-        var explicitStrategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, nameof(TestItem));
+        var explicitStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, nameof(TestEntity));
         var explicitLoaded = await explicitStrategy.LoadAllAsync();
         Assert.Single(explicitLoaded);
         Assert.Equal("Test", explicitLoaded[0].Name);
@@ -282,13 +285,13 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "concurrent.db");
-        var strategy = new LiteDbPersistenceStrategy<TestItem>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
 
         // Act - Concurrent writes
         var tasks = Enumerable.Range(1, 10)
             .Select(async i =>
             {
-                var items = new List<TestItem> { new() { Id = i, Name = $"Concurrent{i}" } };
+                var items = new List<TestEntity> { new() { Id = 0, Name = $"Concurrent{i}" } };
                 await strategy.SaveAllAsync(items);
             })
             .ToArray();
@@ -299,11 +302,5 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
         Assert.True(File.Exists(dbPath));
         var loadedItems = await strategy.LoadAllAsync();
         Assert.NotEmpty(loadedItems);
-    }
-
-    private class TestItem
-    {
-        public int Id { get; set; }
-        public string Name { get; set; } = "";
     }
 }
