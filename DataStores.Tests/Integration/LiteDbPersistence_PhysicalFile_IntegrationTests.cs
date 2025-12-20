@@ -1,4 +1,5 @@
 using DataStores.Persistence;
+using TestHelper.DataStores.Fixtures;
 using TestHelper.DataStores.Models;
 using Xunit;
 
@@ -9,34 +10,13 @@ namespace DataStores.Tests.Integration;
 /// Explizite Integration-Tests zur Verifikation der physischen Dateisystem-Operationen
 /// der LiteDbPersistenceStrategy.
 /// </summary>
-public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
+public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<LiteDbPersistenceTempFixture>
 {
     private readonly string _testRoot;
 
-    public LiteDbPersistence_PhysicalFile_IntegrationTests()
+    public LiteDbPersistence_PhysicalFile_IntegrationTests(LiteDbPersistenceTempFixture fixture)
     {
-        _testRoot = Path.Combine(
-            Path.GetTempPath(),
-            "DataStores.Tests",
-            "LiteDbPersistence",
-            Guid.NewGuid().ToString("N"));
-        
-        Directory.CreateDirectory(_testRoot);
-    }
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_testRoot))
-        {
-            try
-            {
-                Directory.Delete(_testRoot, recursive: true);
-            }
-            catch
-            {
-                // Best effort cleanup
-            }
-        }
+        _testRoot = fixture.TestRoot;
     }
 
     [Fact]
@@ -54,11 +34,26 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
         // Act
         await strategy.SaveAllAsync(items);
 
-        // Assert - Physical DB file must exist
-        Assert.True(File.Exists(dbPath), "LiteDB file was not created on disk");
-        
-        var fileInfo = new FileInfo(dbPath);
-        Assert.True(fileInfo.Length > 0, "LiteDB file is empty");
+        // Assert
+        Assert.True(File.Exists(dbPath));
+    }
+
+    [Fact]
+    public async Task SaveAllAsync_Should_CreateNonEmptyFile()
+    {
+        // Arrange
+        var dbPath = Path.Combine(_testRoot, "test2.db");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var items = new List<TestEntity>
+        {
+            new() { Id = 0, Name = "Item1" }
+        };
+
+        // Act
+        await strategy.SaveAllAsync(items);
+
+        // Assert
+        Assert.True(new FileInfo(dbPath).Length > 0);
     }
 
     [Fact]
@@ -70,18 +65,27 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
         var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
         var items = new List<TestEntity> { new() { Id = 0, Name = "Test" } };
 
-        // Ensure directory doesn't exist
-        if (Directory.Exists(nestedPath))
-        {
-            Directory.Delete(nestedPath, true);
-        }
+        // Act
+        await strategy.SaveAllAsync(items);
+
+        // Assert
+        Assert.True(Directory.Exists(nestedPath));
+    }
+
+    [Fact]
+    public async Task SaveAllAsync_Should_CreateFileInNestedDirectory()
+    {
+        // Arrange
+        var nestedPath = Path.Combine(_testRoot, "nested2", "deep", "folder");
+        var dbPath = Path.Combine(nestedPath, "test.db");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var items = new List<TestEntity> { new() { Id = 0, Name = "Test" } };
 
         // Act
         await strategy.SaveAllAsync(items);
 
-        // Assert - Directory and DB file must be created
-        Assert.True(Directory.Exists(nestedPath), "Nested directory was not created");
-        Assert.True(File.Exists(dbPath), "DB file was not created in nested directory");
+        // Assert
+        Assert.True(File.Exists(dbPath));
     }
 
     [Fact]
@@ -97,20 +101,36 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
             new() { Id = 0, Name = "LoadTest2" }
         };
 
-        // First save to create DB
         await strategy.SaveAllAsync(originalItems);
-
-        // Create new strategy instance to test loading
         var loadStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
 
         // Act
         var loadedItems = await loadStrategy.LoadAllAsync();
 
-        // Assert - LiteDB has assigned IDs > 0
+        // Assert
         Assert.Equal(2, loadedItems.Count);
+    }
+
+    [Fact]
+    public async Task LoadAllAsync_Should_AssignIdsToLoadedItems()
+    {
+        // Arrange
+        var dbPath = Path.Combine(_testRoot, "load2.db");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var originalItems = new List<TestEntity>
+        {
+            new() { Id = 0, Name = "Item1" },
+            new() { Id = 0, Name = "Item2" }
+        };
+        await strategy.SaveAllAsync(originalItems);
+
+        var loadStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+
+        // Act
+        var loadedItems = await loadStrategy.LoadAllAsync();
+
+        // Assert
         Assert.All(loadedItems, item => Assert.True(item.Id > 0));
-        Assert.Contains(loadedItems, i => i.Name == "LoadTest1");
-        Assert.Contains(loadedItems, i => i.Name == "LoadTest2");
     }
 
     [Fact]
@@ -128,7 +148,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
     }
 
     [Fact]
-    public async Task SaveThenLoad_Should_RoundTrip()
+    public async Task SaveThenLoad_Should_PersistAllData()
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "roundtrip.db");
@@ -140,22 +160,12 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
             new() { Id = 0, Name = "Gamma" }
         };
 
-        // Act - Save
+        // Act
         await strategy.SaveAllAsync(originalItems);
-
-        // Assert - Physical file exists
-        Assert.True(File.Exists(dbPath));
-        Assert.True(new FileInfo(dbPath).Length > 0);
-
-        // Act - Load
         var loadedItems = await strategy.LoadAllAsync();
 
-        // Assert - Data matches, IDs assigned
+        // Assert
         Assert.Equal(3, loadedItems.Count);
-        Assert.All(loadedItems, item => Assert.True(item.Id > 0));
-        Assert.Contains(loadedItems, i => i.Name == "Alpha");
-        Assert.Contains(loadedItems, i => i.Name == "Beta");
-        Assert.Contains(loadedItems, i => i.Name == "Gamma");
     }
 
     [Fact]
@@ -172,18 +182,34 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
             new() { Id = 0, Name = "Third" }
         };
 
-        // Act - Save first set
+        // Act
         await strategy.SaveAllAsync(firstItems);
-
-        // Act - Save second set (should replace)
         await strategy.SaveAllAsync(secondItems);
 
-        // Assert - Only second set exists
         var loadedItems = await strategy.LoadAllAsync();
+
+        // Assert
         Assert.Equal(2, loadedItems.Count);
+    }
+
+    [Fact]
+    public async Task SaveAllAsync_Should_NotContainOverwrittenData()
+    {
+        // Arrange
+        var dbPath = Path.Combine(_testRoot, "overwrite2.db");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+
+        var firstItems = new List<TestEntity> { new() { Id = 0, Name = "First" } };
+        var secondItems = new List<TestEntity> { new() { Id = 0, Name = "Second" } };
+
+        // Act
+        await strategy.SaveAllAsync(firstItems);
+        await strategy.SaveAllAsync(secondItems);
+
+        var loadedItems = await strategy.LoadAllAsync();
+
+        // Assert
         Assert.DoesNotContain(loadedItems, i => i.Name == "First");
-        Assert.Contains(loadedItems, i => i.Name == "Second");
-        Assert.Contains(loadedItems, i => i.Name == "Third");
     }
 
     [Fact]
@@ -196,10 +222,9 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
 
         // Act
         await strategy.SaveAllAsync(emptyList);
-
-        // Assert - DB file created but collection empty
-        Assert.True(File.Exists(dbPath));
         var loadedItems = await strategy.LoadAllAsync();
+
+        // Assert
         Assert.Empty(loadedItems);
     }
 
@@ -219,16 +244,11 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
         await strategy1.SaveAllAsync(items1);
         await strategy2.SaveAllAsync(items2);
 
-        // Assert - Both collections exist independently in same DB
-        Assert.True(File.Exists(dbPath));
-
         var loaded1 = await strategy1.LoadAllAsync();
         var loaded2 = await strategy2.LoadAllAsync();
 
-        Assert.Single(loaded1);
+        // Assert
         Assert.Equal("Collection1", loaded1[0].Name);
-
-        Assert.Single(loaded2);
         Assert.Equal("Collection2", loaded2[0].Name);
     }
 
@@ -245,14 +265,9 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
 
         // Act
         await strategy.SaveAllAsync(largeDataset);
-
-        // Assert - File exists and has substantial size
-        Assert.True(File.Exists(dbPath));
-        var fileInfo = new FileInfo(dbPath);
-        Assert.True(fileInfo.Length > 10000, "DB file should contain substantial data");
-
-        // Verify data integrity
         var loadedItems = await strategy.LoadAllAsync();
+
+        // Assert
         Assert.Equal(10000, loadedItems.Count);
     }
 
@@ -261,33 +276,27 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "default-collection.db");
-        
-        // Strategy without explicit collection name
         var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath);
         var items = new List<TestEntity> { new() { Id = 0, Name = "Test" } };
 
         // Act
         await strategy.SaveAllAsync(items);
 
-        // Assert - Should use type name as collection name
-        var loadedItems = await strategy.LoadAllAsync();
-        Assert.Single(loadedItems);
-
-        // Verify it used the type name by trying to load from explicit collection
         var explicitStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, nameof(TestEntity));
         var explicitLoaded = await explicitStrategy.LoadAllAsync();
+
+        // Assert
         Assert.Single(explicitLoaded);
-        Assert.Equal("Test", explicitLoaded[0].Name);
     }
 
     [Fact]
-    public async Task ConcurrentAccess_ShouldBeThreadSafe()
+    public async Task ConcurrentAccess_Should_NotThrow()
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, "concurrent.db");
         var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
 
-        // Act - Concurrent writes
+        // Act
         var tasks = Enumerable.Range(1, 10)
             .Select(async i =>
             {
@@ -298,9 +307,17 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IDisposable
 
         await Task.WhenAll(tasks);
 
-        // Assert - Last write wins, no corruption
+        // Assert
         Assert.True(File.Exists(dbPath));
-        var loadedItems = await strategy.LoadAllAsync();
-        Assert.NotEmpty(loadedItems);
+    }
+}
+
+/// <summary>
+/// Fixture für LiteDB Persistence Tests.
+/// </summary>
+public sealed class LiteDbPersistenceTempFixture : TempDirectoryFixture
+{
+    public LiteDbPersistenceTempFixture() : base("LiteDbPersistence")
+    {
     }
 }

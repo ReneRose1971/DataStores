@@ -14,9 +14,17 @@ namespace DataStores.Tests.Integration;
 /// Demonstriert die komplette App-Initialisierung mit JSON-Persistierung
 /// unter Verwendung der eingebauten JsonFilePersistenceStrategy.
 /// </summary>
-public class JsonDataStore_IntegrationTests : IDisposable
+/// <remarks>
+/// Tests folgen der One Assert Rule: Jeder Test prüft genau einen Aspekt.
+/// Shared Setup reduziert Boilerplate-Code.
+/// </remarks>
+public class JsonDataStore_IntegrationTests : IAsyncLifetime
 {
     private readonly string _testDataPath;
+    private IServiceProvider _serviceProvider = null!;
+    private IDataStores _dataStores = null!;
+    private IDataStore<CustomerDto> _customerStore = null!;
+    private string _customerJsonPath = "";
 
     public JsonDataStore_IntegrationTests()
     {
@@ -24,215 +32,275 @@ public class JsonDataStore_IntegrationTests : IDisposable
         Directory.CreateDirectory(_testDataPath);
     }
 
-    public void Dispose()
+    public async Task InitializeAsync()
+    {
+        _customerJsonPath = Path.Combine(_testDataPath, "customers.json");
+        
+        var services = new ServiceCollection();
+        services.AddDataStoresCore();
+        services.AddDataStoreRegistrar(new JsonCustomerDataStoreRegistrar(_customerJsonPath));
+
+        _serviceProvider = services.BuildServiceProvider();
+        await DataStoreBootstrap.RunAsync(_serviceProvider);
+
+        _dataStores = _serviceProvider.GetRequiredService<IDataStores>();
+        _customerStore = _dataStores.GetGlobal<CustomerDto>();
+    }
+
+    public Task DisposeAsync()
     {
         if (Directory.Exists(_testDataPath))
         {
             Directory.Delete(_testDataPath, recursive: true);
         }
+        return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Szenario: Ein User möchte einen JSON-basierten DataStore für Kunden-DTOs einrichten,
-    /// die App initialisieren und zur Laufzeit auf den Store zugreifen.
-    /// Verwendet die eingebaute JsonFilePersistenceStrategy.
-    /// </summary>
     [Fact]
-    public async Task CompleteAppInitialization_WithJsonPersistence_UserScenario()
+    public void Bootstrap_Should_CreateEmptyStore()
     {
-        // ====================================================================
-        // PHASE 1: App-Initialisierung (beim Start der Anwendung)
-        // ====================================================================
+        Assert.Empty(_customerStore.Items);
+    }
 
-        // 1. Dependency Injection Container einrichten
-        var services = new ServiceCollection();
+    [Fact]
+    public void Add_Should_AddSingleCustomer()
+    {
+        // Arrange
+        var customer = CreateTestCustomer(1, "Max", "Mustermann", "max@example.com");
 
-        // 2. DataStores Core Services registrieren
-        services.AddDataStoresCore();
+        // Act
+        _customerStore.Add(customer);
 
-        // 3. JSON-Datei-Pfad definieren
-        var jsonFilePath = Path.Combine(_testDataPath, "customers.json");
+        // Assert
+        Assert.Single(_customerStore.Items);
+    }
 
-        // 4. Registrar mit Konfiguration direkt erstellen und registrieren
-        // ✅ Keine separate Konfigurationsregistrierung nötig!
-        services.AddDataStoreRegistrar(new JsonCustomerDataStoreRegistrar(jsonFilePath));
-
-        // 5. Service Provider erstellen
-        var serviceProvider = services.BuildServiceProvider();
-
-        // 6. DataStore Bootstrap ausführen
-        // Dies lädt automatisch alle gespeicherten Daten aus JSON-Dateien
-        await DataStoreBootstrap.RunAsync(serviceProvider);
-
-        // ====================================================================
-        // PHASE 2: Laufzeit - Zugriff auf DataStore durch User/Service
-        // ====================================================================
-
-        // 7. IDataStores-Facade aus DI holen
-        var dataStores = serviceProvider.GetRequiredService<IDataStores>();
-
-        // 8. Globalen Store für CustomerDto abrufen
-        var customerStore = dataStores.GetGlobal<CustomerDto>();
-
-        // 9. Anfangs sollte der Store leer sein (keine persistierten Daten)
-        Assert.Empty(customerStore.Items);
-
-        // ====================================================================
-        // PHASE 3: Daten hinzufügen und verwenden
-        // ====================================================================
-
-        // 10. Neue Kunden erstellen und hinzufügen
-        var customer1 = new CustomerDto
+    [Fact]
+    public void AddRange_Should_AddMultipleCustomers()
+    {
+        // Arrange
+        var customers = new[]
         {
-            Id = 1,
-            FirstName = "Max",
-            LastName = "Mustermann",
-            Email = "max.mustermann@example.com",
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
+            CreateTestCustomer(1, "Max", "Mustermann", "max@example.com"),
+            CreateTestCustomer(2, "Anna", "Schmidt", "anna@example.com")
         };
 
-        var customer2 = new CustomerDto
+        // Act
+        _customerStore.AddRange(customers);
+
+        // Assert
+        Assert.Equal(2, _customerStore.Items.Count);
+    }
+
+    [Fact]
+    public void Items_Should_SupportLinqFiltering()
+    {
+        // Arrange
+        _customerStore.AddRange(new[]
         {
-            Id = 2,
-            FirstName = "Anna",
-            LastName = "Schmidt",
-            Email = "anna.schmidt@example.com",
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
+            CreateTestCustomer(1, "Max", "Mustermann", "max@example.com", isActive: true),
+            CreateTestCustomer(2, "Anna", "Schmidt", "anna@example.com", isActive: true),
+            CreateTestCustomer(3, "Peter", "Weber", "peter@example.com", isActive: false)
+        });
 
-        var customer3 = new CustomerDto
-        {
-            Id = 3,
-            FirstName = "Peter",
-            LastName = "Weber",
-            Email = "peter.weber@example.com",
-            IsActive = false,
-            CreatedAt = DateTime.UtcNow.AddDays(-30)
-        };
+        // Act
+        var activeCustomers = _customerStore.Items.Where(c => c.IsActive).ToList();
 
-        // 11. Einzelnen Kunden hinzufügen
-        customerStore.Add(customer1);
-        Assert.Single(customerStore.Items);
+        // Assert
+        Assert.Equal(2, activeCustomers.Count);
+    }
 
-        // 12. Mehrere Kunden gleichzeitig hinzufügen
-        customerStore.AddRange(new[] { customer2, customer3 });
-        Assert.Equal(3, customerStore.Items.Count);
+    [Fact]
+    public void Changed_Event_Should_FireOnAdd()
+    {
+        // Arrange
+        var eventFired = false;
+        _customerStore.Changed += (sender, args) => eventFired = true;
+        var customer = CreateTestCustomer(1, "Max", "Mustermann", "max@example.com");
 
-        // 13. Auf Changed-Events reagieren (z.B. für UI-Updates)
-        var changeNotifications = new List<DataStoreChangeType>();
-        customerStore.Changed += (sender, args) =>
-        {
-            changeNotifications.Add(args.ChangeType);
-        };
+        // Act
+        _customerStore.Add(customer);
 
-        // 14. Weitere Operationen
-        var customer4 = new CustomerDto
-        {
-            Id = 4,
-            FirstName = "Lisa",
-            LastName = "Müller",
-            Email = "lisa.mueller@example.com",
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
-        customerStore.Add(customer4);
+        // Assert
+        Assert.True(eventFired);
+    }
 
-        // 15. Kunden suchen/filtern
-        var activeCustomers = customerStore.Items
-            .Where(c => c.IsActive)
-            .ToList();
-        Assert.Equal(3, activeCustomers.Count);
+    [Fact]
+    public void Changed_Event_Should_ReportCorrectChangeType()
+    {
+        // Arrange
+        DataStoreChangeType? capturedChangeType = null;
+        _customerStore.Changed += (sender, args) => capturedChangeType = args.ChangeType;
+        var customer = CreateTestCustomer(1, "Max", "Mustermann", "max@example.com");
 
-        // 16. Kunden entfernen
-        var removed = customerStore.Remove(customer3);
-        Assert.True(removed);
-        Assert.Equal(3, customerStore.Items.Count);
+        // Act
+        _customerStore.Add(customer);
 
-        // 17. Events wurden ausgelöst
-        Assert.Equal(2, changeNotifications.Count);
-        Assert.Equal(DataStoreChangeType.Add, changeNotifications[0]);
-        Assert.Equal(DataStoreChangeType.Remove, changeNotifications[1]);
+        // Assert
+        Assert.Equal(DataStoreChangeType.Add, capturedChangeType);
+    }
 
-        // ====================================================================
-        // PHASE 4: Persistierung überprüfen
-        // ====================================================================
+    [Fact]
+    public void Remove_Should_DecreaseItemCount()
+    {
+        // Arrange
+        var customer1 = CreateTestCustomer(1, "Max", "Mustermann", "max@example.com");
+        var customer2 = CreateTestCustomer(2, "Anna", "Schmidt", "anna@example.com");
+        _customerStore.AddRange(new[] { customer1, customer2 });
 
-        // 18. Warten auf Auto-Save
+        // Act
+        _customerStore.Remove(customer1);
+
+        // Assert
+        Assert.Single(_customerStore.Items);
+    }
+
+    [Fact]
+    public void Remove_Should_FireChangedEvent()
+    {
+        // Arrange
+        var customer = CreateTestCustomer(1, "Max", "Mustermann", "max@example.com");
+        _customerStore.Add(customer);
+        
+        DataStoreChangeType? capturedChangeType = null;
+        _customerStore.Changed += (sender, args) => capturedChangeType = args.ChangeType;
+
+        // Act
+        _customerStore.Remove(customer);
+
+        // Assert
+        Assert.Equal(DataStoreChangeType.Remove, capturedChangeType);
+    }
+
+    [Fact]
+    public async Task Persistence_Should_CreateJsonFile()
+    {
+        // Arrange
+        var customer = CreateTestCustomer(1, "Max", "Mustermann", "max@example.com");
+        _customerStore.Add(customer);
+
+        // Act
         await Task.Delay(200);
 
-        // 19. Prüfen, dass Daten auf Festplatte gespeichert wurden
-        Assert.True(File.Exists(jsonFilePath));
-
-        // 20. JSON-Datei manuell lesen und verifizieren
-        var jsonContent = await File.ReadAllTextAsync(jsonFilePath);
-        var deserializedCustomers = JsonSerializer.Deserialize<List<CustomerDto>>(jsonContent);
-        Assert.NotNull(deserializedCustomers);
-        Assert.Equal(3, deserializedCustomers.Count);
-
-        // 21. Prüfen, dass die JSON-Datei die aktuellen Daten enthält
-        Assert.Contains(deserializedCustomers, c => c.Email == "max.mustermann@example.com");
-        Assert.Contains(deserializedCustomers, c => c.Email == "anna.schmidt@example.com");
-        Assert.Contains(deserializedCustomers, c => c.Email == "lisa.mueller@example.com");
-        
-        // 22. Prüfen, dass der entfernte Kunde nicht mehr vorhanden ist
-        Assert.DoesNotContain(deserializedCustomers, c => c.Email == "peter.weber@example.com");
+        // Assert
+        Assert.True(File.Exists(_customerJsonPath));
     }
 
-    /// <summary>
-    /// Szenario: User möchte mit mehreren DTOs arbeiten, die jeweils
-    /// in eigenen JSON-Dateien persistiert werden.
-    /// Nutzt die vereinfachte Extension-Methode RegisterGlobalWithJsonFile.
-    /// </summary>
     [Fact]
-    public async Task MultipleDtos_WithSeparateJsonFiles_UsingExtensions_UserScenario()
+    public async Task Persistence_Should_SaveAddedCustomers()
     {
-        // Arrange - App Setup mit Extension-Methoden
-        var services = new ServiceCollection();
-        services.AddDataStoresCore();
-        
+        // Arrange
+        _customerStore.AddRange(new[]
+        {
+            CreateTestCustomer(1, "Max", "Mustermann", "max@example.com"),
+            CreateTestCustomer(2, "Anna", "Schmidt", "anna@example.com"),
+            CreateTestCustomer(3, "Lisa", "Müller", "lisa@example.com")
+        });
+
+        // Act
+        await Task.Delay(200);
+        var jsonContent = await File.ReadAllTextAsync(_customerJsonPath);
+        var deserializedCustomers = JsonSerializer.Deserialize<List<CustomerDto>>(jsonContent);
+
+        // Assert
+        Assert.Equal(3, deserializedCustomers?.Count);
+    }
+
+    [Fact]
+    public async Task Persistence_Should_ContainCorrectData()
+    {
+        // Arrange
+        _customerStore.Add(CreateTestCustomer(1, "Max", "Mustermann", "max@example.com"));
+
+        // Act
+        await Task.Delay(200);
+        var jsonContent = await File.ReadAllTextAsync(_customerJsonPath);
+        var deserializedCustomers = JsonSerializer.Deserialize<List<CustomerDto>>(jsonContent);
+
+        // Assert
+        Assert.Contains(deserializedCustomers!, c => c.Email == "max@example.com");
+    }
+
+    [Fact]
+    public async Task Persistence_Should_NotContainRemovedCustomers()
+    {
+        // Arrange
+        var customer1 = CreateTestCustomer(1, "Max", "Mustermann", "max@example.com");
+        var customer2 = CreateTestCustomer(2, "Peter", "Weber", "peter@example.com");
+        _customerStore.AddRange(new[] { customer1, customer2 });
+        await Task.Delay(200);
+
+        // Act
+        _customerStore.Remove(customer2);
+        await Task.Delay(200);
+
+        var jsonContent = await File.ReadAllTextAsync(_customerJsonPath);
+        var deserializedCustomers = JsonSerializer.Deserialize<List<CustomerDto>>(jsonContent);
+
+        // Assert
+        Assert.DoesNotContain(deserializedCustomers!, c => c.Email == "peter@example.com");
+    }
+
+    [Fact]
+    public async Task MultipleEntityTypes_Should_UseSeparateFiles()
+    {
+        // Arrange
         var customerFile = Path.Combine(_testDataPath, "customers.json");
         var productFile = Path.Combine(_testDataPath, "products.json");
 
-        // ✅ Registrar mit Konfiguration direkt erstellen
+        var services = new ServiceCollection();
+        services.AddDataStoresCore();
         services.AddDataStoreRegistrar(new MultiDtoJsonRegistrar(customerFile, productFile));
 
-        var serviceProvider = services.BuildServiceProvider();
-        await DataStoreBootstrap.RunAsync(serviceProvider);
+        var provider = services.BuildServiceProvider();
+        await DataStoreBootstrap.RunAsync(provider);
 
-        var dataStores = serviceProvider.GetRequiredService<IDataStores>();
-
-        // Act - Verschiedene DTOs verwenden
+        var dataStores = provider.GetRequiredService<IDataStores>();
         var customerStore = dataStores.GetGlobal<CustomerDto>();
         var productStore = dataStores.GetGlobal<ProductDto>();
 
-        customerStore.Add(new CustomerDto
-        {
-            Id = 1,
-            FirstName = "John",
-            LastName = "Doe",
-            Email = "john@example.com",
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        });
+        customerStore.Add(CreateTestCustomer(1, "John", "Doe", "john@example.com"));
+        productStore.Add(new ProductDto { Id = 1, Name = "Laptop", Price = 999.99m, Stock = 10 });
 
+        // Act
+        await Task.Delay(200);
+
+        // Assert
+        Assert.True(File.Exists(customerFile));
+        Assert.True(File.Exists(productFile));
+    }
+
+    [Fact]
+    public async Task MultipleEntityTypes_Should_PersistIndependently()
+    {
+        // Arrange
+        var customerFile = Path.Combine(_testDataPath, "customers.json");
+        var productFile = Path.Combine(_testDataPath, "products.json");
+
+        var services = new ServiceCollection();
+        services.AddDataStoresCore();
+        services.AddDataStoreRegistrar(new MultiDtoJsonRegistrar(customerFile, productFile));
+
+        var provider = services.BuildServiceProvider();
+        await DataStoreBootstrap.RunAsync(provider);
+
+        var dataStores = provider.GetRequiredService<IDataStores>();
+        var customerStore = dataStores.GetGlobal<CustomerDto>();
+        var productStore = dataStores.GetGlobal<ProductDto>();
+
+        customerStore.Add(CreateTestCustomer(1, "John", "Doe", "john@example.com"));
         productStore.AddRange(new[]
         {
             new ProductDto { Id = 1, Name = "Laptop", Price = 999.99m, Stock = 10 },
             new ProductDto { Id = 2, Name = "Mouse", Price = 29.99m, Stock = 50 }
         });
 
+        // Act
+        await Task.Delay(200);
+
         // Assert
         Assert.Single(customerStore.Items);
         Assert.Equal(2, productStore.Items.Count);
-
-        // Wait for auto-save
-        await Task.Delay(200);
-
-        // Verify separate JSON files
-        Assert.True(File.Exists(customerFile));
-        Assert.True(File.Exists(productFile));
     }
 
     // ====================================================================
@@ -313,5 +381,19 @@ public class JsonDataStore_IntegrationTests : IDisposable
                 .RegisterGlobalWithJsonFile<CustomerDto>(_customerFile)
                 .RegisterGlobalWithJsonFile<ProductDto>(_productFile);
         }
+    }
+
+    private static CustomerDto CreateTestCustomer(int id, string firstName, string lastName, 
+        string email, bool isActive = true)
+    {
+        return new CustomerDto
+        {
+            Id = id,
+            FirstName = firstName,
+            LastName = lastName,
+            Email = email,
+            IsActive = isActive,
+            CreatedAt = DateTime.UtcNow
+        };
     }
 }

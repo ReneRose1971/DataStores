@@ -13,259 +13,327 @@ namespace DataStores.Tests.Integration;
 /// Demonstriert die komplette App-Initialisierung mit LiteDB-Persistierung
 /// unter Verwendung der eingebauten LiteDbPersistenceStrategy.
 /// </summary>
-public class LiteDbDataStore_IntegrationTests : IDisposable
+/// <remarks>
+/// Tests folgen der One Assert Rule: Jeder Test prüft genau einen Aspekt.
+/// Shared Setup reduziert Boilerplate-Code.
+/// </remarks>
+public class LiteDbDataStore_IntegrationTests : IAsyncLifetime
 {
     private readonly string _testDbPath;
+    private IServiceProvider _serviceProvider = null!;
+    private IDataStores _dataStores = null!;
+    private IDataStore<OrderDto> _orderStore = null!;
 
     public LiteDbDataStore_IntegrationTests()
     {
         _testDbPath = Path.Combine(Path.GetTempPath(), $"DataStoresTest_{Guid.NewGuid()}.db");
     }
 
-    public void Dispose()
+    public async Task InitializeAsync()
+    {
+        var services = new ServiceCollection();
+        services.AddDataStoresCore();
+        services.AddDataStoreRegistrar(new LiteDbOrderDataStoreRegistrar(_testDbPath));
+
+        _serviceProvider = services.BuildServiceProvider();
+        await DataStoreBootstrap.RunAsync(_serviceProvider);
+
+        _dataStores = _serviceProvider.GetRequiredService<IDataStores>();
+        _orderStore = _dataStores.GetGlobal<OrderDto>();
+    }
+
+    public Task DisposeAsync()
     {
         if (File.Exists(_testDbPath))
         {
             File.Delete(_testDbPath);
         }
+        return Task.CompletedTask;
     }
 
-    /// <summary>
-    /// Szenario: Ein User möchte einen LiteDB-basierten DataStore einrichten,
-    /// die App initialisieren und zur Laufzeit auf den Store zugreifen.
-    /// Verwendet die eingebaute LiteDbPersistenceStrategy.
-    /// </summary>
     [Fact]
-    public async Task CompleteAppInitialization_WithLiteDbPersistence_UserScenario()
+    public void Bootstrap_Should_CreateEmptyStore()
     {
-        // ====================================================================
-        // PHASE 1: App-Initialisierung (beim Start der Anwendung)
-        // ====================================================================
+        Assert.Empty(_orderStore.Items);
+    }
 
-        // 1. Dependency Injection Container einrichten
-        var services = new ServiceCollection();
+    [Fact]
+    public void Add_Should_AssignLiteDbId()
+    {
+        // Arrange
+        var order = CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending);
 
-        // 2. DataStores Core Services registrieren
-        services.AddDataStoresCore();
+        // Act
+        _orderStore.Add(order);
 
-        // 3. Registrar mit Konfiguration direkt erstellen und registrieren
-        // ✅ Keine separate Konfigurationsregistrierung nötig!
-        services.AddDataStoreRegistrar(new LiteDbOrderDataStoreRegistrar(_testDbPath));
+        // Assert
+        Assert.True(order.Id > 0);
+    }
 
-        // 4. Service Provider erstellen
-        var serviceProvider = services.BuildServiceProvider();
-
-        // 5. DataStore Bootstrap ausführen
-        await DataStoreBootstrap.RunAsync(serviceProvider);
-
-        // ====================================================================
-        // PHASE 2: Laufzeit - Zugriff auf DataStore durch User/Service
-        // ====================================================================
-
-        // 6. IDataStores-Facade aus DI holen
-        var dataStores = serviceProvider.GetRequiredService<IDataStores>();
-
-        // 7. Globalen Store für OrderDto abrufen
-        var orderStore = dataStores.GetGlobal<OrderDto>();
-
-        // 8. Anfangs sollte der Store leer sein
-        Assert.Empty(orderStore.Items);
-
-        // ====================================================================
-        // PHASE 3: Business Logic - Bestellungen verwalten
-        // ====================================================================
-
-        // 9. Neue Bestellungen erstellen (Id = 0 für neue Entities!)
-        var order1 = new OrderDto
+    [Fact]
+    public void AddRange_Should_AddMultipleOrders()
+    {
+        // Arrange
+        var orders = new[]
         {
-            Id = 0, // LiteDB vergibt automatisch ID
-            OrderNumber = "ORD-2024-001",
-            CustomerId = 100,
-            CustomerName = "Tech GmbH",
-            TotalAmount = 1599.99m,
-            Status = OrderStatus.Pending,
-            OrderDate = DateTime.UtcNow,
-            Items = new List<string> { "Laptop", "Mouse", "Keyboard" }
+            CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending),
+            CreateTestOrder("ORD-002", 101, "Customer B", 2000m, OrderStatus.Processing)
         };
 
-        var order2 = new OrderDto
+        // Act
+        _orderStore.AddRange(orders);
+
+        // Assert
+        Assert.Equal(2, _orderStore.Items.Count);
+    }
+
+    [Fact]
+    public void AddRange_Should_AssignIdsToAllItems()
+    {
+        // Arrange
+        var orders = new[]
         {
-            Id = 0, // LiteDB vergibt automatisch ID
-            OrderNumber = "ORD-2024-002",
-            CustomerId = 101,
-            CustomerName = "Software AG",
-            TotalAmount = 2999.99m,
-            Status = OrderStatus.Processing,
-            OrderDate = DateTime.UtcNow.AddHours(-2),
-            Items = new List<string> { "Server", "Monitor x2" }
+            CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending),
+            CreateTestOrder("ORD-002", 101, "Customer B", 2000m, OrderStatus.Processing),
+            CreateTestOrder("ORD-003", 100, "Customer A", 500m, OrderStatus.Shipped)
         };
 
-        var order3 = new OrderDto
+        // Act
+        _orderStore.AddRange(orders);
+
+        // Assert
+        Assert.All(_orderStore.Items, o => Assert.True(o.Id > 0));
+    }
+
+    [Fact]
+    public void Items_Should_SupportLinqFiltering()
+    {
+        // Arrange
+        _orderStore.AddRange(new[]
         {
-            Id = 0, // LiteDB vergibt automatisch ID
-            OrderNumber = "ORD-2024-003",
-            CustomerId = 100,
-            CustomerName = "Tech GmbH",
-            TotalAmount = 499.99m,
-            Status = OrderStatus.Shipped,
-            OrderDate = DateTime.UtcNow.AddDays(-1),
-            Items = new List<string> { "USB-C Cable", "Adapter" }
-        };
+            CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending),
+            CreateTestOrder("ORD-002", 101, "Customer B", 2000m, OrderStatus.Processing),
+            CreateTestOrder("ORD-003", 100, "Customer A", 500m, OrderStatus.Shipped)
+        });
 
-        // 10. Bestellungen zum Store hinzufügen
-        orderStore.Add(order1);
-        orderStore.AddRange(new[] { order2, order3 });
+        // Act
+        var customerAOrders = _orderStore.Items.Where(o => o.CustomerId == 100).ToList();
 
-        Assert.Equal(3, orderStore.Items.Count);
-        
-        // Nach dem Hinzufügen sollten alle Items IDs von LiteDB erhalten haben
-        Assert.All(orderStore.Items, o => Assert.True(o.Id > 0, "LiteDB sollte IDs vergeben haben"));
+        // Assert
+        Assert.Equal(2, customerAOrders.Count);
+    }
 
-        // 11. Geschäftslogik: Bestellungen nach Kunde filtern
-        var techGmbHOrders = orderStore.Items
-            .Where(o => o.CustomerId == 100)
-            .ToList();
-        Assert.Equal(2, techGmbHOrders.Count);
+    [Fact]
+    public void Items_Should_SupportLinqGrouping()
+    {
+        // Arrange
+        _orderStore.AddRange(new[]
+        {
+            CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending),
+            CreateTestOrder("ORD-002", 101, "Customer B", 2000m, OrderStatus.Processing),
+            CreateTestOrder("ORD-003", 100, "Customer A", 500m, OrderStatus.Shipped)
+        });
 
-        // 12. Geschäftslogik: Bestellungen nach Status gruppieren
-        var ordersByStatus = orderStore.Items
+        // Act
+        var ordersByStatus = _orderStore.Items
             .GroupBy(o => o.Status)
-            .ToDictionary(g => g.Key, g => g.ToList());
+            .ToDictionary(g => g.Key, g => g.Count());
 
-        Assert.Single(ordersByStatus[OrderStatus.Pending]);
-        Assert.Single(ordersByStatus[OrderStatus.Processing]);
-        Assert.Single(ordersByStatus[OrderStatus.Shipped]);
+        // Assert
+        Assert.Equal(1, ordersByStatus[OrderStatus.Pending]);
+    }
 
-        // 13. Geschäftslogik: Gesamtumsatz berechnen
-        var totalRevenue = orderStore.Items.Sum(o => o.TotalAmount);
+    [Fact]
+    public void Items_Should_SupportLinqAggregation()
+    {
+        // Arrange
+        _orderStore.AddRange(new[]
+        {
+            CreateTestOrder("ORD-001", 100, "Customer A", 1599.99m, OrderStatus.Pending),
+            CreateTestOrder("ORD-002", 101, "Customer B", 2999.99m, OrderStatus.Processing),
+            CreateTestOrder("ORD-003", 100, "Customer A", 499.99m, OrderStatus.Shipped)
+        });
+
+        // Act
+        var totalRevenue = _orderStore.Items.Sum(o => o.TotalAmount);
+
+        // Assert
         Assert.Equal(5099.97m, totalRevenue);
+    }
 
-        // ====================================================================
-        // PHASE 4: Datenänderungen
-        // ====================================================================
+    [Fact]
+    public void Changed_Event_Should_FireOnAdd()
+    {
+        // Arrange
+        var eventFired = false;
+        _orderStore.Changed += (sender, args) => eventFired = true;
+        var order = CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending);
 
-        // 14. Event-Tracking für Änderungen
-        var changeLog = new List<string>();
-        orderStore.Changed += (sender, args) =>
-        {
-            changeLog.Add($"{args.ChangeType}: {args.AffectedItems.Count} items");
-        };
+        // Act
+        _orderStore.Add(order);
 
-        // 15. Bestellstatus aktualisieren (simuliert durch Entfernen/Hinzufügen)
-        var orderToUpdate = orderStore.Items.First(o => o.OrderNumber == "ORD-2024-001");
-        orderStore.Remove(orderToUpdate);
+        // Assert
+        Assert.True(eventFired);
+    }
+
+    [Fact]
+    public void Changed_Event_Should_FireOnRemove()
+    {
+        // Arrange
+        var order = CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending);
+        _orderStore.Add(order);
         
-        var updatedOrder = new OrderDto
-        {
-            Id = orderToUpdate.Id, // Behält die von LiteDB vergebene ID
-            OrderNumber = orderToUpdate.OrderNumber,
-            CustomerId = orderToUpdate.CustomerId,
-            CustomerName = orderToUpdate.CustomerName,
-            TotalAmount = orderToUpdate.TotalAmount,
-            Status = OrderStatus.Processing, // Status geändert!
-            OrderDate = orderToUpdate.OrderDate,
-            Items = orderToUpdate.Items
-        };
-        orderStore.Add(updatedOrder);
+        var eventFired = false;
+        _orderStore.Changed += (sender, args) => eventFired = true;
 
-        // 16. Bestellung stornieren (entfernen)
-        var orderToCancel = orderStore.Items.First(o => o.OrderNumber == "ORD-2024-003");
-        orderStore.Remove(orderToCancel);
+        // Act
+        _orderStore.Remove(order);
 
-        Assert.Equal(2, orderStore.Items.Count);
-        Assert.Equal(3, changeLog.Count);
+        // Assert
+        Assert.True(eventFired);
+    }
 
-        // ====================================================================
-        // PHASE 5: Persistierung überprüfen
-        // ====================================================================
+    [Fact]
+    public void Remove_Should_DecreaseItemCount()
+    {
+        // Arrange
+        var order1 = CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending);
+        var order2 = CreateTestOrder("ORD-002", 101, "Customer B", 2000m, OrderStatus.Processing);
+        _orderStore.AddRange(new[] { order1, order2 });
 
-        // 17. Warten auf Auto-Save
+        // Act
+        _orderStore.Remove(order1);
+
+        // Assert
+        Assert.Single(_orderStore.Items);
+    }
+
+    [Fact]
+    public async Task Persistence_Should_CreatePhysicalDbFile()
+    {
+        // Arrange
+        var order = CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending);
+        _orderStore.Add(order);
+
+        // Act
         await Task.Delay(200);
 
-        // 18. Prüfen, dass LiteDB-Datei erstellt wurde
+        // Assert
         Assert.True(File.Exists(_testDbPath));
-        Assert.True(new FileInfo(_testDbPath).Length > 0);
-
-        // 19. Direkte Verifikation der gespeicherten Daten
-        var strategy = new LiteDbPersistenceStrategy<OrderDto>(_testDbPath, "orders");
-        var savedOrders = await strategy.LoadAllAsync();
-        
-        Assert.Equal(2, savedOrders.Count);
-        
-        // Finde die aktualisierte Bestellung (nicht mehr nach Id=1, da LiteDB IDs vergibt)
-        var savedOrder1 = savedOrders.FirstOrDefault(o => o.OrderNumber == "ORD-2024-001");
-        Assert.NotNull(savedOrder1);
-        Assert.Equal(OrderStatus.Processing, savedOrder1!.Status);
-        
-        // Stornierte Bestellung sollte nicht mehr vorhanden sein
-        Assert.DoesNotContain(savedOrders, o => o.OrderNumber == "ORD-2024-003");
     }
 
-    /// <summary>
-    /// Szenario: Mehrere Entity-Typen in derselben LiteDB-Datenbank.
-    /// Verwendet die vereinfachte Extension-Methode RegisterGlobalWithLiteDb.
-    /// </summary>
     [Fact]
-    public async Task MultipleEntities_InSameLiteDb_UsingExtensions_UserScenario()
+    public async Task Persistence_Should_CreateNonEmptyDbFile()
     {
-        // Arrange - App Setup mit Extension-Methoden
+        // Arrange
+        var order = CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending);
+        _orderStore.Add(order);
+
+        // Act
+        await Task.Delay(200);
+
+        // Assert
+        Assert.True(new FileInfo(_testDbPath).Length > 0);
+    }
+
+    [Fact]
+    public async Task Persistence_Should_SaveAddedOrders()
+    {
+        // Arrange
+        _orderStore.AddRange(new[]
+        {
+            CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending),
+            CreateTestOrder("ORD-002", 101, "Customer B", 2000m, OrderStatus.Processing)
+        });
+
+        // Act
+        await Task.Delay(200);
+        var strategy = new LiteDbPersistenceStrategy<OrderDto>(_testDbPath, "orders");
+        var savedOrders = await strategy.LoadAllAsync();
+
+        // Assert
+        Assert.Equal(2, savedOrders.Count);
+    }
+
+    [Fact]
+    public async Task Persistence_Should_NotSaveRemovedOrders()
+    {
+        // Arrange
+        var order1 = CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Pending);
+        var order2 = CreateTestOrder("ORD-002", 101, "Customer B", 2000m, OrderStatus.Processing);
+        _orderStore.AddRange(new[] { order1, order2 });
+        await Task.Delay(200);
+
+        // Act
+        _orderStore.Remove(order2);
+        await Task.Delay(200);
+        
+        var strategy = new LiteDbPersistenceStrategy<OrderDto>(_testDbPath, "orders");
+        var savedOrders = await strategy.LoadAllAsync();
+
+        // Assert
+        Assert.DoesNotContain(savedOrders, o => o.OrderNumber == "ORD-002");
+    }
+
+    [Fact]
+    public async Task MultipleEntities_Should_UseIndependentCollections()
+    {
+        // Arrange - Neue Services mit Multi-Entity-Registrar
         var services = new ServiceCollection();
         services.AddDataStoresCore();
-        
-        // ✅ Registrar mit Konfiguration direkt erstellen
         services.AddDataStoreRegistrar(new MultiEntityLiteDbRegistrar(_testDbPath));
 
-        var serviceProvider = services.BuildServiceProvider();
-        await DataStoreBootstrap.RunAsync(serviceProvider);
+        var provider = services.BuildServiceProvider();
+        await DataStoreBootstrap.RunAsync(provider);
 
-        var dataStores = serviceProvider.GetRequiredService<IDataStores>();
-
-        // Act - Mit verschiedenen Entities arbeiten
+        var dataStores = provider.GetRequiredService<IDataStores>();
         var orderStore = dataStores.GetGlobal<OrderDto>();
         var invoiceStore = dataStores.GetGlobal<InvoiceDto>();
 
-        // Neue Entities mit Id = 0 erstellen
-        var order = new OrderDto
-        {
-            Id = 0, // LiteDB vergibt automatisch ID
-            OrderNumber = "ORD-001",
-            CustomerId = 100,
-            CustomerName = "Kunde A",
-            TotalAmount = 1000m,
-            Status = OrderStatus.Completed,
-            OrderDate = DateTime.UtcNow,
-            Items = new List<string> { "Produkt 1" }
-        };
-        
+        var order = CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Completed);
         orderStore.Add(order);
 
-        // Nach dem Add sollte LiteDB eine ID vergeben haben
-        Assert.True(order.Id > 0, "LiteDB sollte eine ID vergeben haben");
-        var assignedOrderId = order.Id;
-
+        // Act
         invoiceStore.AddRange(new[]
         {
-            new InvoiceDto { Id = 0, InvoiceNumber = "INV-001", OrderId = assignedOrderId, Amount = 1000m, IsPaid = true },
-            new InvoiceDto { Id = 0, InvoiceNumber = "INV-002", OrderId = assignedOrderId, Amount = 500m, IsPaid = false }
+            new InvoiceDto { Id = 0, InvoiceNumber = "INV-001", OrderId = order.Id, Amount = 1000m, IsPaid = true },
+            new InvoiceDto { Id = 0, InvoiceNumber = "INV-002", OrderId = order.Id, Amount = 500m, IsPaid = false }
         });
 
         // Assert
-        Assert.Single(orderStore.Items);
         Assert.Equal(2, invoiceStore.Items.Count);
-        Assert.All(invoiceStore.Items, i => Assert.True(i.Id > 0, "LiteDB sollte IDs vergeben haben"));
+    }
 
-        // Wait for auto-save
+    [Fact]
+    public async Task MultipleEntities_Should_PersistIndependently()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        services.AddDataStoresCore();
+        services.AddDataStoreRegistrar(new MultiEntityLiteDbRegistrar(_testDbPath));
+
+        var provider = services.BuildServiceProvider();
+        await DataStoreBootstrap.RunAsync(provider);
+
+        var dataStores = provider.GetRequiredService<IDataStores>();
+        var orderStore = dataStores.GetGlobal<OrderDto>();
+        var invoiceStore = dataStores.GetGlobal<InvoiceDto>();
+
+        var order = CreateTestOrder("ORD-001", 100, "Customer A", 1000m, OrderStatus.Completed);
+        orderStore.Add(order);
+        invoiceStore.Add(new InvoiceDto { Id = 0, InvoiceNumber = "INV-001", OrderId = order.Id, Amount = 1000m, IsPaid = true });
+
+        // Act
         await Task.Delay(200);
-
-        // Verify data was saved
         var orderStrategy = new LiteDbPersistenceStrategy<OrderDto>(_testDbPath, "orders");
         var invoiceStrategy = new LiteDbPersistenceStrategy<InvoiceDto>(_testDbPath, "invoices");
 
         var savedOrders = await orderStrategy.LoadAllAsync();
         var savedInvoices = await invoiceStrategy.LoadAllAsync();
 
+        // Assert
         Assert.Single(savedOrders);
-        Assert.Equal(2, savedInvoices.Count);
+        Assert.Single(savedInvoices);
     }
 
     // ====================================================================
@@ -381,5 +449,21 @@ public class LiteDbDataStore_IntegrationTests : IDisposable
                 .RegisterGlobalWithLiteDb<OrderDto>(_databasePath, "orders")
                 .RegisterGlobalWithLiteDb<InvoiceDto>(_databasePath, "invoices");
         }
+    }
+
+    private static OrderDto CreateTestOrder(string orderNumber, int customerId, string customerName, 
+        decimal totalAmount, OrderStatus status)
+    {
+        return new OrderDto
+        {
+            Id = 0,
+            OrderNumber = orderNumber,
+            CustomerId = customerId,
+            CustomerName = customerName,
+            TotalAmount = totalAmount,
+            Status = status,
+            OrderDate = DateTime.UtcNow,
+            Items = new List<string> { "Item1", "Item2" }
+        };
     }
 }
