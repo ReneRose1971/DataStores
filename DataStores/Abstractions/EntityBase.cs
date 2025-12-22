@@ -1,3 +1,5 @@
+using PropertyChanged;
+
 namespace DataStores.Abstractions;
 
 /// <summary>
@@ -8,6 +10,7 @@ namespace DataStores.Abstractions;
 /// Diese Klasse stellt sicher, dass alle Entitäten:
 /// <list type="bullet">
 /// <item><description>Eine eindeutige Integer-ID haben</description></item>
+/// <item><description>INotifyPropertyChanged implementieren (via Fody.PropertyChanged)</description></item>
 /// <item><description>Sinnvolle String-Repräsentation implementieren</description></item>
 /// <item><description>Korrekte Gleichheits-Semantik haben</description></item>
 /// </list>
@@ -19,6 +22,12 @@ namespace DataStores.Abstractions;
 /// <item><description><see cref="Equals(object?)"/> - Gleichheits-Logik</description></item>
 /// <item><description><see cref="GetHashCode"/> - Hash-Code-Berechnung</description></item>
 /// </list>
+/// </para>
+/// <para>
+/// <b>PropertyChanged:</b>
+/// Durch Fody.PropertyChanged wird automatisch INotifyPropertyChanged implementiert.
+/// Die Id-Property ist mit [DoNotNotify] markiert, da ID-Änderungen nach Persistierung
+/// nicht überwacht werden müssen.
 /// </para>
 /// </remarks>
 /// <example>
@@ -41,9 +50,11 @@ namespace DataStores.Abstractions;
 /// }
 /// </code>
 /// </example>
+[AddINotifyPropertyChangedInterface]
 public abstract class EntityBase : IEntity
 {
     /// <inheritdoc/>
+    [DoNotNotify]
     public int Id { get; set; }
 
     /// <summary>

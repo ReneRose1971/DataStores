@@ -7,12 +7,19 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Fody" Version="6.9.3">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="LiteDB" Version="5.0.21" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.1" />
+    <PackageReference Include="PropertyChanged.Fody" Version="4.1.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Documents\Visual Studio 2022\Projects\CSharp\Projekte\Common.BootStrap\Common.BootStrap.csproj" />
+    <Reference Include="Common.BootStrap">
+      <HintPath>..\..\Common.Bootstrap\Common.BootStrap\bin\Debug\net8.0\Common.BootStrap.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

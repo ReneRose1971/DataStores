@@ -7,15 +7,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataStores.Tests", "DataSto
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "References", "References", "{790D6944-5305-4B7A-890A-99B6B80BAC60}"
 	ProjectSection(SolutionItems) = preProject
-		..\..\..\Documents\Solutionbundler\bundles\Libraries\Common.BootStrap.md = ..\..\..\Documents\Solutionbundler\bundles\Libraries\Common.BootStrap.md
 		..\..\..\Documents\Visual Studio 2022\Projects\CSharp\copilot\global-copilot-instructions.md = ..\..\..\Documents\Visual Studio 2022\Projects\CSharp\copilot\global-copilot-instructions.md
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataStores", "DataStores\DataStores.csproj", "{DB484383-BAC2-8F22-9339-0D8ADB2CBA24}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestHelper.DataStores", "TestHelper.DataStores\TestHelper.DataStores.csproj", "{1D407AC1-BD87-BFF4-3731-6B4249E3E004}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Common.BootStrap", "..\..\..\Documents\Visual Studio 2022\Projects\CSharp\Projekte\Common.BootStrap\Common.BootStrap.csproj", "{C7015644-7892-4AD2-950A-0D929B2889A8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,18 +60,6 @@ Global
 		{1D407AC1-BD87-BFF4-3731-6B4249E3E004}.Release|x64.Build.0 = Release|Any CPU
 		{1D407AC1-BD87-BFF4-3731-6B4249E3E004}.Release|x86.ActiveCfg = Release|Any CPU
 		{1D407AC1-BD87-BFF4-3731-6B4249E3E004}.Release|x86.Build.0 = Release|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Debug|x64.Build.0 = Debug|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Debug|x86.Build.0 = Debug|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Release|x64.ActiveCfg = Release|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Release|x64.Build.0 = Release|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Release|x86.ActiveCfg = Release|Any CPU
-		{C7015644-7892-4AD2-950A-0D929B2889A8}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
