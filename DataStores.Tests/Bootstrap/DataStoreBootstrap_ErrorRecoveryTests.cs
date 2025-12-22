@@ -16,7 +16,8 @@ public class DataStoreBootstrap_ErrorRecoveryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddSingleton<IDataStoreRegistrar, FailingRegistrar>();
 
         var provider = services.BuildServiceProvider();
@@ -33,7 +34,8 @@ public class DataStoreBootstrap_ErrorRecoveryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         
         var registrar1 = new TrackingRegistrar();
         var registrar2 = new TrackingRegistrar();
@@ -56,7 +58,8 @@ public class DataStoreBootstrap_ErrorRecoveryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddSingleton<IDataStoreRegistrar, DuplicateRegistrar>();
 
         var provider = services.BuildServiceProvider();
@@ -71,7 +74,8 @@ public class DataStoreBootstrap_ErrorRecoveryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         
         var slowStrategy = new SlowInitStrategy<TestItem>(TimeSpan.FromSeconds(10));
         var innerStore = new InMemoryDataStore<TestItem>();
@@ -96,7 +100,8 @@ public class DataStoreBootstrap_ErrorRecoveryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddSingleton<IAsyncInitializable, FailingAsyncInitializable>();
 
         var provider = services.BuildServiceProvider();
@@ -113,7 +118,8 @@ public class DataStoreBootstrap_ErrorRecoveryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
 
         var provider = services.BuildServiceProvider();
 
@@ -134,7 +140,8 @@ public class DataStoreBootstrap_ErrorRecoveryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         
         var init1 = new TrackingAsyncInitializable();
         var init2 = new TrackingAsyncInitializable();
@@ -157,7 +164,8 @@ public class DataStoreBootstrap_ErrorRecoveryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddSingleton<TestService>();
         services.AddSingleton<IDataStoreRegistrar, ServiceProviderUsingRegistrar>();
 
@@ -177,7 +185,8 @@ public class DataStoreBootstrap_ErrorRecoveryTests
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         
         var operations = new List<string>();
         var registrar = new OrderTrackingRegistrar(operations);

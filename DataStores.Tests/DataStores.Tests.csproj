@@ -27,6 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Reference Include="Common.BootStrap">
+      <HintPath>..\..\..\..\Documents\Visual Studio 2022\Projects\CSharp\Projekte\Common.BootStrap\bin\Debug\net8.0\Common.BootStrap.dll</HintPath>
+    </Reference>
     <Reference Include="TestHelper">
       <HintPath>C:\Users\schro\Documents\Visual Studio 2022\Projects\CSharp\Projekte\TestHelper\bin\Debug\net8.0\TestHelper.dll</HintPath>
     </Reference>

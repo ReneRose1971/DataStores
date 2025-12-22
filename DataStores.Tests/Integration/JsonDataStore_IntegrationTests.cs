@@ -37,7 +37,8 @@ public class JsonDataStore_IntegrationTests : IAsyncLifetime
         _customerJsonPath = Path.Combine(_testDataPath, "customers.json");
         
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(new JsonCustomerDataStoreRegistrar(_customerJsonPath));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -249,7 +250,8 @@ public class JsonDataStore_IntegrationTests : IAsyncLifetime
         var productFile = Path.Combine(_testDataPath, "products.json");
 
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(new MultiDtoJsonRegistrar(customerFile, productFile));
 
         var provider = services.BuildServiceProvider();
@@ -278,7 +280,8 @@ public class JsonDataStore_IntegrationTests : IAsyncLifetime
         var productFile = Path.Combine(_testDataPath, "products.json");
 
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(new MultiDtoJsonRegistrar(customerFile, productFile));
 
         var provider = services.BuildServiceProvider();

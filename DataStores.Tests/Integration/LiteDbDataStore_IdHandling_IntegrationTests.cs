@@ -37,7 +37,8 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IDisposable
     {
         // Arrange - App Setup
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(new ProductDataStoreRegistrar(_testDbPath));
 
         var serviceProvider = services.BuildServiceProvider();
@@ -92,7 +93,8 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IDisposable
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(new ProductDataStoreRegistrar(_testDbPath));
 
         var serviceProvider = services.BuildServiceProvider();
@@ -131,7 +133,8 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IDisposable
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(new ProductDataStoreRegistrar(_testDbPath));
 
         var serviceProvider = services.BuildServiceProvider();
@@ -232,7 +235,8 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IDisposable
 
         // Act - Neue App-Instanz mit autoLoad
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(new ProductDataStoreRegistrar(_testDbPath));
 
         var serviceProvider = services.BuildServiceProvider();

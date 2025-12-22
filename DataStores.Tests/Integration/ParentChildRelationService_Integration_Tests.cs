@@ -105,7 +105,8 @@ public class ParentChildRelationService_Integration_Tests
         // PHASE 1: Setup DI and Bootstrap
         // ====================================================================
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar<TestDataStoreRegistrar>();
 
         var serviceProvider = services.BuildServiceProvider();

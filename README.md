@@ -25,7 +25,7 @@ Umfassende Testsuite mit über 100 Tests zur Sicherstellung der Qualität und Zu
 - Integrationstests für End-to-End-Szenarien
 - Edge-Case- und Fehlerbehandlungstests
 
-[Zur DataStores.Tests Dokumentation](DataStores.Tests/README.md)
+[Zur DataStores.Tests Projekt README](DataStores.Tests/README.md)
 
 ## Schnellstart
 
@@ -48,10 +48,18 @@ dotnet build
 using DataStores.Abstractions;
 using DataStores.Bootstrap;
 using Microsoft.Extensions.DependencyInjection;
+using Common.Bootstrap;
 
-// 1. Dependency Injection einrichten
+// 1. Dependency Injection einrichten mit ServiceModule-Pattern
 var services = new ServiceCollection();
-services.AddDataStoresCore();
+
+// Automatische Registrierung via AddModulesFromAssemblies
+services.AddModulesFromAssemblies(
+    typeof(DataStoresServiceModule).Assembly);
+
+// Oder manuell:
+// var module = new DataStoresServiceModule();
+// module.Register(services);
 
 // 2. Registrar hinzufügen
 services.AddDataStoreRegistrar<MyDataStoreRegistrar>();

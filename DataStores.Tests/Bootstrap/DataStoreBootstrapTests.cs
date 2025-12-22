@@ -32,7 +32,8 @@ public class DataStoreBootstrapTests
     public void Run_Should_CallAllRegistrars()
     {
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         var registrar = new TestRegistrar();
         services.AddSingleton<IDataStoreRegistrar>(registrar);
 
@@ -46,7 +47,8 @@ public class DataStoreBootstrapTests
     public void Run_Should_PassRegistry()
     {
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         var registrar = new TestRegistrar();
         services.AddSingleton<IDataStoreRegistrar>(registrar);
 
@@ -60,7 +62,8 @@ public class DataStoreBootstrapTests
     public void Run_Should_RegisterStores()
     {
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddSingleton<IDataStoreRegistrar, TestRegistrar>();
 
         var provider = services.BuildServiceProvider();
@@ -75,7 +78,8 @@ public class DataStoreBootstrapTests
     public async Task RunAsync_Should_InitializeAsyncInitializables()
     {
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
 
         var strategy = new FakePersistenceStrategy<TestItem>();
         var innerStore = new InMemoryDataStore<TestItem>();
@@ -92,7 +96,8 @@ public class DataStoreBootstrapTests
     public void Run_Should_WorkWithNoRegistrars()
     {
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
 
         var provider = services.BuildServiceProvider();
 

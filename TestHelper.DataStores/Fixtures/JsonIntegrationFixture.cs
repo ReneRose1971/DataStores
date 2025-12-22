@@ -46,7 +46,8 @@ public sealed class JsonIntegrationFixture : IAsyncDisposable
         Directory.CreateDirectory(DataPath);
 
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(registrar);
 
         ServiceProvider = services.BuildServiceProvider();

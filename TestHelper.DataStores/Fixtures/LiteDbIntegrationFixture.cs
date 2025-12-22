@@ -1,9 +1,6 @@
 using DataStores.Abstractions;
 using DataStores.Bootstrap;
-using DataStores.Persistence;
-using DataStores.Runtime;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace TestHelper.DataStores.Fixtures;
 
@@ -48,7 +45,8 @@ public sealed class LiteDbIntegrationFixture : IAsyncDisposable
         DbPath = Path.Combine(Path.GetTempPath(), $"DataStoresTest_{Guid.NewGuid()}.db");
 
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(registrar);
 
         ServiceProvider = services.BuildServiceProvider();

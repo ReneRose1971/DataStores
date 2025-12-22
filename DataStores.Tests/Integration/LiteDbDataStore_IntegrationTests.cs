@@ -32,7 +32,8 @@ public class LiteDbDataStore_IntegrationTests : IAsyncLifetime
     public async Task InitializeAsync()
     {
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(new LiteDbOrderDataStoreRegistrar(_testDbPath));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -280,7 +281,8 @@ public class LiteDbDataStore_IntegrationTests : IAsyncLifetime
     {
         // Arrange - Neue Services mit Multi-Entity-Registrar
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(new MultiEntityLiteDbRegistrar(_testDbPath));
 
         var provider = services.BuildServiceProvider();
@@ -309,7 +311,8 @@ public class LiteDbDataStore_IntegrationTests : IAsyncLifetime
     {
         // Arrange
         var services = new ServiceCollection();
-        services.AddDataStoresCore();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
         services.AddDataStoreRegistrar(new MultiEntityLiteDbRegistrar(_testDbPath));
 
         var provider = services.BuildServiceProvider();
