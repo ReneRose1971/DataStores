@@ -18,17 +18,3 @@ public interface ILocalDataStoreFactory
         IEqualityComparer<T>? comparer = null,
         SynchronizationContext? context = null) where T : class;
 }
-
-/// <summary>
-/// Default implementation of <see cref="ILocalDataStoreFactory"/>.
-/// </summary>
-public class LocalDataStoreFactory : ILocalDataStoreFactory
-{
-    /// <inheritdoc/>
-    public InMemoryDataStore<T> CreateLocal<T>(
-        IEqualityComparer<T>? comparer = null,
-        SynchronizationContext? context = null) where T : class
-    {
-        return new InMemoryDataStore<T>(comparer, context);
-    }
-}
