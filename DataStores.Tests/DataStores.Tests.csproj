@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -32,17 +32,17 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="Common.BootStrap">
-      <HintPath>..\..\..\..\Documents\Visual Studio 2022\Projects\CSharp\Projekte\Common.BootStrap\bin\Debug\net8.0\Common.BootStrap.dll</HintPath>
-    </Reference>
-    <Reference Include="TestHelper">
-      <HintPath>C:\Users\schro\Documents\Visual Studio 2022\Projects\CSharp\Projekte\TestHelper\bin\Debug\net8.0\TestHelper.dll</HintPath>
-    </Reference>
+    <Folder Include="Builders\" />
+    <Folder Include="Relations\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Builders\" />
-    <Folder Include="Relations\" />
+    <Reference Include="Common.BootStrap">
+      <HintPath>..\..\Common.Bootstrap\Common.BootStrap\bin\Debug\net8.0\Common.BootStrap.dll</HintPath>
+    </Reference>
+    <Reference Include="TestHelper">
+      <HintPath>..\..\TestHelper\TestHelper\bin\Debug\net8.0\TestHelper.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

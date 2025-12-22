@@ -1,36 +1,36 @@
 # DataStores - Flexible In-Memory Datenspeicherverwaltung
 
-Eine moderne .NET 8 Bibliothek für die Verwaltung von typsicheren In-Memory-Datensammlungen mit umfassender Unterstützung für Persistierung, Event-Handling und hierarchische Beziehungen.
+Eine moderne .NET 8 Bibliothek fï¿½r die Verwaltung von typsicheren In-Memory-Datensammlungen mit umfassender Unterstï¿½tzung fï¿½r Persistierung, Event-Handling und hierarchische Beziehungen.
 
 ## ?? Inhaltsverzeichnis
 
-- [Übersicht](#übersicht)
+- [ï¿½bersicht](#ï¿½bersicht)
 - [Installation](#installation)
 - [Schnellstart](#schnellstart)
 - [Kernkonzepte](#kernkonzepte)
 - [Dokumentation](#dokumentation)
 - [Beispiele](#beispiele)
 
-## ?? Übersicht
+## ?? ï¿½bersicht
 
-DataStores ist eine leistungsstarke Bibliothek, die eine flexible und typsichere Verwaltung von In-Memory-Datensammlungen ermöglicht. Sie vereinfacht die Arbeit mit Daten in modernen .NET-Anwendungen durch:
+DataStores ist eine leistungsstarke Bibliothek, die eine flexible und typsichere Verwaltung von In-Memory-Datensammlungen ermï¿½glicht. Sie vereinfacht die Arbeit mit Daten in modernen .NET-Anwendungen durch:
 
 ### Hauptmerkmale
 
-- ? **Typsichere Datenspeicher**: Generische `IDataStore<T>` Schnittstelle für jede Klasse
+- ? **Typsichere Datenspeicher**: Generische `IDataStore<T>` Schnittstelle fï¿½r jede Klasse
 - ?? **Globale & Lokale Stores**: Zentrale Singleton-Stores und isolierte lokale Instanzen
 - ?? **Thread-Sicherheit**: Alle Operationen sind thread-sicher implementiert
 - ?? **Persistierung**: Optionale asynchrone Speicherung mit Auto-Load/Auto-Save
-- ?? **Event-System**: Änderungsbenachrichtigungen mit detaillierten EventArgs
-- ??????????? **Relationen**: Eltern-Kind-Beziehungen zwischen verschiedenen Entitätstypen
+- ?? **Event-System**: ï¿½nderungsbenachrichtigungen mit detaillierten EventArgs
+- ??????????? **Relationen**: Eltern-Kind-Beziehungen zwischen verschiedenen Entitï¿½tstypen
 - ?? **DI-Integration**: Nahtlose Integration mit Microsoft.Extensions.DependencyInjection
-- ?? **UI-Thread-Support**: SynchronizationContext für WPF/WinForms/MAUI
-- ?? **Bulk-Operationen**: AddRange für performante Massen-Operationen
-- ?? **Flexible Filter**: Snapshots mit Prädikaten und Custom Comparers
+- ?? **UI-Thread-Support**: SynchronizationContext fï¿½r WPF/WinForms/MAUI
+- ?? **Bulk-Operationen**: AddRange fï¿½r performante Massen-Operationen
+- ?? **Flexible Filter**: Snapshots mit Prï¿½dikaten und Custom Comparers
 
 ## ?? Installation
 
-### NuGet Package (wenn veröffentlicht)
+### NuGet Package (wenn verï¿½ffentlicht)
 ```bash
 dotnet add package DataStores
 ```
@@ -55,7 +55,7 @@ var services = new ServiceCollection();
 // DataStores Core registrieren
 services.AddDataStoresCore();
 
-// Eigenen Registrar hinzufügen
+// Eigenen Registrar hinzufï¿½gen
 services.AddDataStoreRegistrar<ProductStoreRegistrar>();
 
 var serviceProvider = services.BuildServiceProvider();
@@ -68,12 +68,12 @@ using DataStores.Abstractions;
 using DataStores.Runtime;
 
 /// <summary>
-/// Registriert globale DataStores für die Anwendung.
+/// Registriert globale DataStores fï¿½r die Anwendung.
 /// </summary>
 public class ProductStoreRegistrar : IDataStoreRegistrar
 {
     /// <summary>
-    /// Registriert alle benötigten globalen Stores.
+    /// Registriert alle benï¿½tigten globalen Stores.
     /// </summary>
     public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
     {
@@ -87,7 +87,7 @@ public class ProductStoreRegistrar : IDataStoreRegistrar
 }
 ```
 
-### 3. Bootstrap ausführen
+### 3. Bootstrap ausfï¿½hren
 
 ```csharp
 // Stores initialisieren
@@ -115,7 +115,7 @@ public class ProductService
     }
     
     /// <summary>
-    /// Lädt alle Produkte aus dem globalen Store.
+    /// Lï¿½dt alle Produkte aus dem globalen Store.
     /// </summary>
     public IReadOnlyList<Product> GetAllProducts()
     {
@@ -124,7 +124,7 @@ public class ProductService
     }
     
     /// <summary>
-    /// Fügt ein neues Produkt hinzu.
+    /// Fï¿½gt ein neues Produkt hinzu.
     /// </summary>
     public void AddProduct(Product product)
     {
@@ -147,31 +147,31 @@ public class ProductService
 
 ### IDataStore<T>
 
-Die zentrale Schnittstelle für alle Datenspeicher:
+Die zentrale Schnittstelle fï¿½r alle Datenspeicher:
 
 ```csharp
 /// <summary>
-/// Repräsentiert einen Datenspeicher für Elemente vom Typ T.
+/// Reprï¿½sentiert einen Datenspeicher fï¿½r Elemente vom Typ T.
 /// </summary>
 public interface IDataStore<T> where T : class
 {
     /// <summary>
-    /// Ruft die schreibgeschützte Sammlung aller Elemente ab.
+    /// Ruft die schreibgeschï¿½tzte Sammlung aller Elemente ab.
     /// </summary>
     IReadOnlyList<T> Items { get; }
     
     /// <summary>
-    /// Tritt ein, wenn sich der Datenspeicher ändert.
+    /// Tritt ein, wenn sich der Datenspeicher ï¿½ndert.
     /// </summary>
     event EventHandler<DataStoreChangedEventArgs<T>> Changed;
     
     /// <summary>
-    /// Fügt ein Element zum Store hinzu.
+    /// Fï¿½gt ein Element zum Store hinzu.
     /// </summary>
     void Add(T item);
     
     /// <summary>
-    /// Fügt mehrere Elemente in einer Bulk-Operation hinzu.
+    /// Fï¿½gt mehrere Elemente in einer Bulk-Operation hinzu.
     /// </summary>
     void AddRange(IEnumerable<T> items);
     
@@ -186,7 +186,7 @@ public interface IDataStore<T> where T : class
     void Clear();
     
     /// <summary>
-    /// Prüft, ob ein Element im Store enthalten ist.
+    /// Prï¿½ft, ob ein Element im Store enthalten ist.
     /// </summary>
     bool Contains(T item);
 }
@@ -216,23 +216,23 @@ var filteredStore = stores.CreateLocalSnapshotFromGlobal<Product>(
 var store = stores.GetGlobal<Product>();
 
 /// <summary>
-/// Handler für Store-Änderungen.
+/// Handler fï¿½r Store-ï¿½nderungen.
 /// </summary>
 store.Changed += (sender, e) =>
 {
     switch (e.ChangeType)
     {
         case DataStoreChangeType.Add:
-            Console.WriteLine($"Produkt hinzugefügt: {e.AffectedItems[0].Name}");
+            Console.WriteLine($"Produkt hinzugefï¿½gt: {e.AffectedItems[0].Name}");
             break;
         case DataStoreChangeType.Remove:
             Console.WriteLine($"Produkt entfernt");
             break;
         case DataStoreChangeType.Clear:
-            Console.WriteLine("Alle Produkte gelöscht");
+            Console.WriteLine("Alle Produkte gelï¿½scht");
             break;
         case DataStoreChangeType.BulkAdd:
-            Console.WriteLine($"{e.AffectedItems.Count} Produkte hinzugefügt");
+            Console.WriteLine($"{e.AffectedItems.Count} Produkte hinzugefï¿½gt");
             break;
     }
 };
@@ -242,31 +242,31 @@ store.Changed += (sender, e) =>
 
 ### Detaillierte Guides
 
-- **[API Referenz](Docs/API-Reference.md)** - Vollständige API-Dokumentation aller Klassen und Methoden
+- **[API Referenz](Docs/API-Reference.md)** - Vollstï¿½ndige API-Dokumentation aller Klassen und Methoden
 - **[Formale Spezifikationen](Docs/Formal-Specifications.md)** - Invarianten, Verhaltensgarantien und formale Regeln
-- **[Verwendungsbeispiele](Docs/Usage-Examples.md)** - Praktische Beispiele für häufige Szenarien
+- **[Verwendungsbeispiele](Docs/Usage-Examples.md)** - Praktische Beispiele fï¿½r hï¿½ufige Szenarien
 - **[Persistierung Guide](Docs/Persistence-Guide.md)** - Daten persistent speichern
 - **[Beziehungen Guide](Docs/Relations-Guide.md)** - Eltern-Kind-Beziehungen verwalten
 
-### API-Übersicht
+### API-ï¿½bersicht
 
 #### Abstractions (Interfaces)
-- `IDataStore<T>` - Hauptschnittstelle für Datenspeicher
-- `IDataStores` - Facade für den Zugriff auf Stores
+- `IDataStore<T>` - Hauptschnittstelle fï¿½r Datenspeicher
+- `IDataStores` - Facade fï¿½r den Zugriff auf Stores
 - `IGlobalStoreRegistry` - Verwaltung globaler Stores
 - `IDataStoreRegistrar` - Registrierung von Stores beim Bootstrap
-- `DataStoreChangedEventArgs<T>` - Event-Daten für Änderungen
+- `DataStoreChangedEventArgs<T>` - Event-Daten fï¿½r ï¿½nderungen
 
 #### Runtime (Implementierungen)
 - `InMemoryDataStore<T>` - Thread-sichere In-Memory-Implementierung
 - `DataStoresFacade` - Facade-Implementierung
 - `GlobalStoreRegistry` - Thread-sichere Registry
-- `LocalDataStoreFactory` - Factory für lokale Stores
+- `LocalDataStoreFactory` - Factory fï¿½r lokale Stores
 
 #### Persistence (Persistierung)
-- `IPersistenceStrategy<T>` - Schnittstelle für Persistierung
+- `IPersistenceStrategy<T>` - Schnittstelle fï¿½r Persistierung
 - `PersistentStoreDecorator<T>` - Decorator mit Auto-Load/Save
-- `IAsyncInitializable` - Marker-Interface für async Initialisierung
+- `IAsyncInitializable` - Marker-Interface fï¿½r async Initialisierung
 
 #### Relations (Beziehungen)
 - `ParentChildRelationship<TParent, TChild>` - Eltern-Kind-Beziehungen
@@ -297,7 +297,7 @@ public class Product
 var stores = serviceProvider.GetRequiredService<IDataStores>();
 var productStore = stores.GetGlobal<Product>();
 
-// Produkt hinzufügen
+// Produkt hinzufï¿½gen
 productStore.Add(new Product 
 { 
     Id = 1, 
@@ -339,7 +339,7 @@ public class JsonPersistenceStrategy<T> : IPersistenceStrategy<T> where T : clas
     }
     
     /// <summary>
-    /// Lädt Daten aus JSON-Datei.
+    /// Lï¿½dt Daten aus JSON-Datei.
     /// </summary>
     public async Task<IReadOnlyList<T>> LoadAllAsync(CancellationToken cancellationToken = default)
     {
@@ -437,10 +437,10 @@ public class CategoryProductService
         // Kinderprodukte abrufen
         var childProducts = rel.Childs.Items;
         
-        // Auf Änderungen reagieren
+        // Auf ï¿½nderungen reagieren
         rel.Childs.Changed += (s, e) => 
         {
-            Console.WriteLine($"Produkte in {rel.Parent.Name} geändert");
+            Console.WriteLine($"Produkte in {rel.Parent.Name} geï¿½ndert");
         };
     }
 }
@@ -478,7 +478,7 @@ public class ProductViewModel
         // Events werden automatisch auf UI-Thread gemarshallt
         store.Changed += (s, e) =>
         {
-            // Läuft auf UI-Thread - kann direkt UI aktualisieren
+            // Lï¿½uft auf UI-Thread - kann direkt UI aktualisieren
             Application.Current.Dispatcher.Invoke(() =>
             {
                 RefreshUI();
@@ -503,18 +503,18 @@ DataStores/
 ?   ??? IGlobalStoreRegistry.cs                    # Registry-Interface
 ?   ??? IDataStoreRegistrar.cs                     # Registrar-Interface
 ?   ??? DataStoreChangedEventArgs.cs               # Event-Argumente
-?   ??? GlobalStoreNotRegisteredException.cs       # Exception für fehlende Registrierung
-?   ??? GlobalStoreAlreadyRegisteredException.cs   # Exception für doppelte Registrierung
+?   ??? GlobalStoreNotRegisteredException.cs       # Exception fï¿½r fehlende Registrierung
+?   ??? GlobalStoreAlreadyRegisteredException.cs   # Exception fï¿½r doppelte Registrierung
 ?
 ??? Runtime/
 ?   ??? InMemoryDataStore.cs                       # In-Memory-Implementierung
 ?   ??? DataStoresFacade.cs                        # Facade-Implementierung
 ?   ??? GlobalStoreRegistry.cs                     # Registry-Implementierung
-?   ??? ILocalDataStoreFactory.cs                  # Factory für lokale Stores
+?   ??? ILocalDataStoreFactory.cs                  # Factory fï¿½r lokale Stores
 ?
 ??? Persistence/
 ?   ??? IPersistenceStrategy.cs                    # Persistierungs-Interface
-?   ??? PersistentStoreDecorator.cs                # Decorator für Persistierung
+?   ??? PersistentStoreDecorator.cs                # Decorator fï¿½r Persistierung
 ?   ??? IAsyncInitializable.cs                     # Async-Init-Interface
 ?   ??? PersistentStoreRegistrationExtensions.cs   # Helper-Erweiterungen
 ?
@@ -535,20 +535,20 @@ DataStores/
 
 ## ?? Anforderungen
 
-- .NET 8.0 oder höher
+- .NET 8.0 oder hï¿½her
 - Microsoft.Extensions.DependencyInjection.Abstractions 10.0.1+
 
 ## ?? Migration & Updates
 
-Prüfen Sie die [CHANGELOG.md](CHANGELOG.md) für Informationen zu Breaking Changes und neuen Features.
+Prï¿½fen Sie die [CHANGELOG.md](CHANGELOG.md) fï¿½r Informationen zu Breaking Changes und neuen Features.
 
 ## ?? Beitragen
 
-Contributions sind willkommen! Siehe [CONTRIBUTING.md](../CONTRIBUTING.md) für Details.
+Contributions sind willkommen! Siehe [CONTRIBUTING.md](../CONTRIBUTING.md) fï¿½r Details.
 
 ## ?? Lizenz
 
-[Lizenz hier einfügen]
+[Lizenz hier einfï¿½gen]
 
 ## ?? Maintainer
 

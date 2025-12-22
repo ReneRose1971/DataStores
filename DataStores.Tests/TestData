@@ -1,0 +1,215 @@
+using TestHelper.DataStores.Models;
+using TestHelper.DataStores.TestData;
+using Xunit;
+
+namespace TestHelper.DataStores.Tests.TestData;
+
+/// <summary>
+/// Tests für ITestDataFactory und ObjectFillerTestDataFactory.
+/// </summary>
+[Trait("Category", "Unit")]
+public class ObjectFillerTestDataFactory_Tests
+{
+    [Fact]
+    public void CreateSingle_Should_ReturnNonNullEntity()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+
+        // Act
+        var entity = factory.CreateSingle();
+
+        // Assert
+        Assert.NotNull(entity);
+    }
+
+    [Fact]
+    public void CreateSingle_Should_PopulateProperties()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+
+        // Act
+        var entity = factory.CreateSingle();
+
+        // Assert
+        Assert.NotEqual(default, entity.Name);
+    }
+
+    [Fact]
+    public void CreateSingle_WithSameSeed_Should_ReturnIdenticalEntities()
+    {
+        // Arrange
+        var factory1 = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+        var factory2 = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+
+        // Act
+        var entity1 = factory1.CreateSingle();
+        var entity2 = factory2.CreateSingle();
+
+        // Assert
+        Assert.Equal(entity1.Name, entity2.Name);
+    }
+
+    [Fact]
+    public void CreateSingle_WithDifferentSeeds_Should_ReturnDifferentEntities()
+    {
+        // Arrange
+        var factory1 = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+        var factory2 = new ObjectFillerTestDataFactory<TestEntity>(seed: 99);
+
+        // Act
+        var entity1 = factory1.CreateSingle();
+        var entity2 = factory2.CreateSingle();
+
+        // Assert
+        Assert.NotEqual(entity1.Name, entity2.Name);
+    }
+
+    [Fact]
+    public void CreateMany_Should_ReturnCorrectCount()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+
+        // Act
+        var entities = factory.CreateMany(10).ToList();
+
+        // Assert
+        Assert.Equal(10, entities.Count);
+    }
+
+    [Fact]
+    public void CreateMany_WithZeroCount_Should_ReturnEmptySequence()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+
+        // Act
+        var entities = factory.CreateMany(0).ToList();
+
+        // Assert
+        Assert.Empty(entities);
+    }
+
+    [Fact]
+    public void CreateMany_WithNegativeCount_Should_ThrowArgumentOutOfRangeException()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+
+        // Act & Assert
+        Assert.Throws<ArgumentOutOfRangeException>(() => 
+            factory.CreateMany(-1).ToList());
+    }
+
+    [Fact]
+    public void CreateMany_Should_ReturnDistinctInstances()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+
+        // Act
+        var entities = factory.CreateMany(5).ToList();
+
+        // Assert
+        Assert.Equal(5, entities.Distinct().Count());
+    }
+
+    [Fact]
+    public void CreateMany_Should_SupportLazyEvaluation()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+
+        // Act
+        var sequence = factory.CreateMany(1000); // Nicht materialisiert
+        var first = sequence.First();
+
+        // Assert
+        Assert.NotNull(first);
+    }
+
+    [Fact]
+    public void Constructor_WithSetupAction_Should_ApplyConfiguration()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(
+            seed: 42,
+            setupAction: filler =>
+            {
+                filler.Setup()
+                    .OnProperty(x => x.Age).Use(() => 25)
+                    .OnProperty(x => x.Id).IgnoreIt();
+            });
+
+        // Act
+        var entity = factory.CreateSingle();
+
+        // Assert
+        Assert.Equal(25, entity.Age);
+    }
+
+    [Fact]
+    public void Constructor_WithSetupAction_Should_IgnoreSpecifiedProperties()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(
+            seed: 42,
+            setupAction: filler =>
+            {
+                filler.Setup().OnProperty(x => x.Id).IgnoreIt();
+            });
+
+        // Act
+        var entity = factory.CreateSingle();
+
+        // Assert
+        Assert.Equal(0, entity.Id);
+    }
+
+    [Fact]
+    public void Constructor_WithNullSetupAction_Should_ThrowArgumentNullException()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() =>
+            new ObjectFillerTestDataFactory<TestEntity>(seed: 42, setupAction: null!));
+    }
+
+    [Fact]
+    public void CreateSingle_Should_BeThreadSafe()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+        var entities = new List<TestEntity>();
+        var lockObj = new object();
+
+        // Act
+        Parallel.For(0, 10, _ =>
+        {
+            var entity = factory.CreateSingle();
+            lock (lockObj)
+            {
+                entities.Add(entity);
+            }
+        });
+
+        // Assert
+        Assert.Equal(10, entities.Count);
+    }
+
+    [Fact]
+    public void CreateMany_LargeCount_Should_CompleteInReasonableTime()
+    {
+        // Arrange
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
+        // Act
+        var entities = factory.CreateMany(1000).ToList();
+        stopwatch.Stop();
+
+        // Assert (< 5 Sekunden für 1000 Entities)
+        Assert.True(stopwatch.ElapsedMilliseconds < 5000);
+    }
+}

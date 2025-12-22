@@ -16,6 +16,93 @@ TestHelper.DataStores ist eine dedizierte Test-Bibliothek, die wiederverwendbare
 
 ## Namespaces
 
+### TestHelper.DataStores.TestData
+
+Abstraktion und Implementierung für Testdaten-Erzeugung.
+
+#### `ITestDataFactory<T>`
+
+Abstraktion für die Erzeugung von Testdaten.
+
+```csharp
+public interface ITestDataFactory<T> where T : class
+{
+    T CreateSingle();
+    IEnumerable<T> CreateMany(int count);
+}
+```
+
+**Design-Prinzipien:**
+- ✅ Kennt keine DataStores-Implementierungen
+- ✅ Kennt keine Persistenz-Logik
+- ✅ Erzeugt reine POCOs ohne Seiteneffekte
+- ✅ Deterministisch (gleiche Konfiguration = gleiche Daten)
+- ✅ Thread-safe (Instanz-basiert, kein statischer Zustand)
+
+**Verwendung:**
+Primär in der Arrange-Phase von Unit- und Integrationstests zur Erzeugung
+von Testdaten für DataStores, LINQ-Queries, Performance-Tests, etc.
+
+#### `ObjectFillerTestDataFactory<T>`
+
+Testdaten-Factory basierend auf ObjectFiller.NET.
+
+```csharp
+public sealed class ObjectFillerTestDataFactory<T> : ITestDataFactory<T> 
+    where T : class, new()
+```
+
+**Konstruktoren:**
+```csharp
+public ObjectFillerTestDataFactory(int? seed = null);
+public ObjectFillerTestDataFactory(int? seed, Action<Filler<T>> setupAction);
+```
+
+**Features:**
+- ✅ Seed-basierte Reproduzierbarkeit (gleicher Seed = gleiche Daten)
+- ✅ Automatische Befüllung aller Properties
+- ✅ Optionales Custom-Setup für Property-Konfiguration
+- ✅ Thread-safe (keine statischen Felder)
+- ✅ Lazy Evaluation für CreateMany()
+
+**Verwendung:**
+```csharp
+// Beispiel 1: Einfache Verwendung mit Seed
+var factory = new ObjectFillerTestDataFactory<Product>(seed: 42);
+var product = factory.CreateSingle();
+var products = factory.CreateMany(100).ToList();
+
+// Beispiel 2: Mit Custom-Setup
+var factory = new ObjectFillerTestDataFactory<Employee>(
+    seed: 123,
+    setupAction: filler =>
+    {
+        filler.Setup()
+            .OnProperty(x => x.Age).Use(() => Random.Shared.Next(18, 65))
+            .OnProperty(x => x.Salary).Use(() => Random.Shared.Next(30000, 120000))
+            .OnProperty(x => x.Id).IgnoreIt(); // LiteDB setzt ID
+    });
+var employees = factory.CreateMany(50);
+
+// Beispiel 3: Nachbearbeitung für fachliche Logik
+var orderFactory = new ObjectFillerTestDataFactory<Order>(seed: 999);
+var orders = orderFactory.CreateMany(100).ToList();
+foreach (var order in orders)
+{
+    // Fachliche Konsistenz sicherstellen
+    order.ShipDate = order.OrderDate.AddDays(Random.Shared.Next(1, 7));
+}
+```
+
+**Einschränkungen:**
+- ❌ Keine fachliche Logik (z.B. OrderDate vor ShipDate)
+- ❌ Keine Relationen oder FK-Integrität
+- ❌ Keine komplexen Invarianten
+
+➡️ **Siehe auch:** [Testdaten-Erzeugung Architektur](TestData-Generation-Architecture.md)
+
+---
+
 ### TestHelper.DataStores.Fakes
 
 Fake-Implementierungen der DataStores-Interfaces für Testzwecke.
@@ -109,12 +196,13 @@ public class DataStoreBuilder<T> where T : class
 
 **Methoden:**
 - `DataStoreBuilder<T> WithItems(params T[] items)` - Fügt initiale Items hinzu
+- `DataStoreBuilder<T> WithGeneratedItems(ITestDataFactory<T> factory, int count)` - Fügt generierte Items hinzu ⭐ NEU
 - `DataStoreBuilder<T> WithSyncContext(SynchronizationContext ctx)` - Setzt SynchronizationContext
 - `DataStoreBuilder<T> WithComparer(IEqualityComparer<T> comparer)` - Setzt Custom-Comparer
 - `DataStoreBuilder<T> WithChangedHandler(EventHandler<DataStoreChangedEventArgs<T>> handler)` - Registriert Event-Handler
 - `IDataStore<T> Build()` - Erstellt den konfigurierten Store
 
-**Verwendung:**
+**Verwendung (klassisch):**
 ```csharp
 var store = new DataStoreBuilder<Product>()
     .WithItems(
@@ -125,6 +213,25 @@ var store = new DataStoreBuilder<Product>()
     .Build();
 
 Assert.Equal(2, store.Items.Count);
+```
+
+**Verwendung (mit Testdaten-Generierung):** ⭐ NEU
+```csharp
+// Einfach: Generierte Items
+var factory = new ObjectFillerTestDataFactory<Product>(seed: 42);
+var store = new DataStoreBuilder<Product>()
+    .WithGeneratedItems(factory, count: 100)
+    .Build();
+
+// Kombiniert: Manuelle + Generierte Items
+var specialProduct = new Product { Name = "Special" };
+var store = new DataStoreBuilder<Product>()
+    .WithItems(specialProduct)
+    .WithGeneratedItems(factory, count: 50)
+    .WithComparer(new IdComparer())
+    .Build();
+
+Assert.Equal(51, store.Items.Count);
 ```
 
 ---
@@ -284,7 +391,72 @@ Assert.True(store.Contains(new Product { Id = 999, Name = "TEST" })); // Case-in
 
 ## Best Practices
 
-### 1. Fakes für Unit-Tests
+### 1. Testdaten-Generierung für Performance-Tests
+
+```csharp
+[Fact]
+public void BulkInsert_Should_HandleThousandItems()
+{
+    // Arrange
+    var factory = new ObjectFillerTestDataFactory<Product>(seed: 42);
+    var store = new DataStoreBuilder<Product>()
+        .WithGeneratedItems(factory, count: 1000)
+        .Build();
+
+    // Act
+    var count = store.Items.Count;
+
+    // Assert
+    Assert.Equal(1000, count);
+}
+```
+
+### 2. Deterministisches Verhalten mit Seeds
+
+```csharp
+[Fact]
+public void GeneratedData_WithSameSeed_Should_BeIdentical()
+{
+    // Arrange
+    var factory1 = new ObjectFillerTestDataFactory<Person>(seed: 123);
+    var factory2 = new ObjectFillerTestDataFactory<Person>(seed: 123);
+
+    // Act
+    var person1 = factory1.CreateSingle();
+    var person2 = factory2.CreateSingle();
+
+    // Assert
+    Assert.Equal(person1.Name, person2.Name);
+}
+```
+
+### 3. Fachliche Logik durch Nachbearbeitung
+
+```csharp
+[Fact]
+public void Orders_Should_HaveLogicalDates()
+{
+    // Arrange
+    var factory = new ObjectFillerTestDataFactory<Order>(seed: 42);
+    var orders = factory.CreateMany(50).ToList();
+    
+    // Fachliche Konsistenz herstellen
+    foreach (var order in orders)
+    {
+        order.ShipDate = order.OrderDate.AddDays(Random.Shared.Next(1, 7));
+    }
+
+    // Act
+    var store = new DataStoreBuilder<Order>()
+        .WithItems(orders.ToArray())
+        .Build();
+
+    // Assert
+    Assert.All(store.Items, o => Assert.True(o.ShipDate >= o.OrderDate));
+}
+```
+
+### 4. Fakes für Unit-Tests
 
 ```csharp
 [Fact]
@@ -303,7 +475,7 @@ public void MyService_Should_CallStore()
 }
 ```
 
-### 2. Builder für Testdaten-Setup
+### 5. Builder für Testdaten-Setup
 
 ```csharp
 [Fact]
@@ -319,7 +491,7 @@ public void ComplexScenario_Test()
 }
 ```
 
-### 3. Persistence-Fakes für Decorator-Tests
+### 6. Persistence-Fakes für Decorator-Tests
 
 ```csharp
 [Fact]
@@ -339,7 +511,7 @@ public async Task Decorator_Should_LoadOnInit()
 }
 ```
 
-### 4. Race-Condition-Tests
+### 7. Race-Condition-Tests
 
 ```csharp
 [Fact]
@@ -360,6 +532,16 @@ public async Task ConcurrentLoads_Should_LoadOnlyOnce()
     Assert.Equal(10, strategy.LoadCallCount); // Oder 1 bei echter Synchronisation
 }
 ```
+
+---
+
+## Weitere Dokumentation
+
+- **[Testdaten-Erzeugung Architektur](TestData-Generation-Architecture.md)** ⭐ NEU
+  - Motivation und Design-Entscheidungen
+  - Wann ObjectFiller geeignet ist
+  - Wann ObjectFiller NICHT geeignet ist
+  - Detaillierte Verwendungsbeispiele
 
 ---
 
@@ -407,6 +589,7 @@ var comparer = new KeySelectorEqualityComparer<Product, int>(x => x.Id);
 
 ### Thread-Sicherheit
 
+- ✅ `ObjectFillerTestDataFactory<T>` ist thread-sicher (Lock) ⭐ NEU
 - ✅ `FakePersistenceStrategy<T>` ist thread-sicher (Lock)
 - ✅ `FakeDataStore<T>` ist NICHT thread-sicher (für Tests ausreichend)
 - ✅ `FakeGlobalStoreRegistry` ist NICHT thread-sicher (für Tests ausreichend)
@@ -417,6 +600,11 @@ Diese Fakes sind für Tests optimiert, nicht für Performance:
 - In-Memory-Speicher (keine Persistierung)
 - Einfache Implementierungen
 - Keine Optimierungen wie Caching
+
+**ObjectFiller Performance:** ⭐ NEU
+- Einfache Entities: ~1ms pro Stück
+- Komplexe Objekt-Graphen: ~5-10ms pro Stück
+- 1000 Entities: < 1 Sekunde
 
 ---
 

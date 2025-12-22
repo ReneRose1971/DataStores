@@ -1,17 +1,17 @@
 # DataStores.Tests - Test-Projekt
 
-Umfassende Testsuite für die DataStores-Bibliothek mit über 100 Tests zur Sicherstellung der Qualität und Zuverlässigkeit.
+Umfassende Testsuite fï¿½r die DataStores-Bibliothek mit ï¿½ber 100 Tests zur Sicherstellung der Qualitï¿½t und Zuverlï¿½ssigkeit.
 
-## ?? Übersicht
+## ?? ï¿½bersicht
 
-Dieses Projekt enthält alle Tests für die DataStores-Bibliothek, organisiert in verschiedene Kategorien zur umfassenden Abdeckung aller Funktionen und Edge-Cases.
+Dieses Projekt enthï¿½lt alle Tests fï¿½r die DataStores-Bibliothek, organisiert in verschiedene Kategorien zur umfassenden Abdeckung aller Funktionen und Edge-Cases.
 
 ## ?? Test-Kategorien
 
-### 1. **Unit Tests** (Grundlegende Funktionalität)
-- `InMemoryDataStoreTests.cs` - Tests für den In-Memory-Store
-- `DataStoresFacadeTests.cs` - Tests für die Facade
-- `GlobalStoreRegistryTests.cs` - Tests für die Registry
+### 1. **Unit Tests** (Grundlegende Funktionalitï¿½t)
+- `InMemoryDataStoreTests.cs` - Tests fï¿½r den In-Memory-Store
+- `DataStoresFacadeTests.cs` - Tests fï¿½r die Facade
+- `GlobalStoreRegistryTests.cs` - Tests fï¿½r die Registry
 - `ServiceCollectionExtensionsTests.cs` - DI-Integration-Tests
 - `DataStoreBootstrapTests.cs` - Bootstrap-Prozess-Tests
 - `PersistentStoreDecoratorTests.cs` - Persistierung-Tests
@@ -23,7 +23,7 @@ Dieses Projekt enthält alle Tests für die DataStores-Bibliothek, organisiert in 
 - `Runtime/InMemoryDataStore_ComparerTests.cs` - Custom Comparer-Tests
 - `Runtime/InMemoryDataStore_EdgeCaseTests.cs` - Edge-Case-Tests
 - `Runtime/DataStoresFacade_ErrorHandlingTests.cs` - Fehlerbehandlung
-- `Runtime/GlobalStoreRegistry_ConcurrencyTests.cs` - Nebenläufigkeits-Tests
+- `Runtime/GlobalStoreRegistry_ConcurrencyTests.cs` - Nebenlï¿½ufigkeits-Tests
 - `Runtime/LocalDataStoreFactory_Tests.cs` - Factory-Tests
 
 ### 3. **Persistence Tests** (Persistierung)
@@ -40,7 +40,7 @@ Dieses Projekt enthält alle Tests für die DataStores-Bibliothek, organisiert in 
 - `Abstractions/Exceptions_Tests.cs` - Exception-Tests
 
 ### 7. **Integration Tests** (End-to-End)
-- `Integration/End2End_ScenarioTests.cs` - Vollständige Szenarien
+- `Integration/End2End_ScenarioTests.cs` - Vollstï¿½ndige Szenarien
 
 ### 8. **Performance Tests** (Leistung)
 - `Performance/Performance_StressTests.cs` - Stress- und Performance-Tests
@@ -49,7 +49,7 @@ Dieses Projekt enthält alle Tests für die DataStores-Bibliothek, organisiert in 
 
 | Kategorie | Anzahl Tests | Abdeckung |
 |-----------|--------------|-----------|
-| Unit Tests | ~40 | Core-Funktionalität |
+| Unit Tests | ~40 | Core-Funktionalitï¿½t |
 | Runtime Tests | ~30 | Thread-Sicherheit & Edge-Cases |
 | Persistence Tests | ~15 | Auto-Load/Save & Race-Conditions |
 | Relations Tests | ~10 | Eltern-Kind-Beziehungen |
@@ -62,16 +62,16 @@ Dieses Projekt enthält alle Tests für die DataStores-Bibliothek, organisiert in 
 ### Test-Helpers
 
 #### Fakes
-- `Fakes/FakeDataStore.cs` - Test-Double für IDataStore
-- `Fakes/FakeGlobalStoreRegistry.cs` - Test-Double für Registry
+- `Fakes/FakeDataStore.cs` - Test-Double fï¿½r IDataStore
+- `Fakes/FakeGlobalStoreRegistry.cs` - Test-Double fï¿½r Registry
 
 #### Builders
-- `Builders/DataStoreBuilder.cs` - Fluent Builder für Test-Stores
+- `Builders/DataStoreBuilder.cs` - Fluent Builder fï¿½r Test-Stores
 
 #### Test-Utilities
-- `FakePersistenceStrategy.cs` - Test-Double für Persistierung
+- `FakePersistenceStrategy.cs` - Test-Double fï¿½r Persistierung
 
-## ?? Tests ausführen
+## ?? Tests ausfï¿½hren
 
 ### Alle Tests
 
@@ -110,7 +110,7 @@ dotnet test --filter "FullyQualifiedName~InMemoryDataStore_Add_Should_AddItem"
 
 ```csharp
 /// <summary>
-/// Test für Add-Funktionalität.
+/// Test fï¿½r Add-Funktionalitï¿½t.
 /// </summary>
 [Fact]
 public void Add_Should_AddItemToStore()
@@ -132,7 +132,7 @@ public void Add_Should_AddItemToStore()
 
 ```csharp
 /// <summary>
-/// Test für Changed-Event.
+/// Test fï¿½r Changed-Event.
 /// </summary>
 [Fact]
 public void Add_Should_RaiseChangedEvent()
@@ -158,7 +158,7 @@ public void Add_Should_RaiseChangedEvent()
 
 ```csharp
 /// <summary>
-/// Test für Thread-Sicherheit.
+/// Test fï¿½r Thread-Sicherheit.
 /// </summary>
 [Fact]
 public void ConcurrentAdds_Should_BeThreadSafe()
@@ -186,7 +186,7 @@ public void ConcurrentAdds_Should_BeThreadSafe()
 
 ```csharp
 /// <summary>
-/// Test für Auto-Save.
+/// Test fï¿½r Auto-Save.
 /// </summary>
 [Fact]
 public async Task AutoSave_Should_SaveOnChange()
@@ -264,20 +264,20 @@ dotnet reportgenerator -reports:coverage.opencover.xml -targetdir:coverage-repor
 ### Thread-Sicherheit
 - ? Parallele Adds
 - ? Parallele Removes
-- ? Read während Write
-- ? Clear während Read
+- ? Read wï¿½hrend Write
+- ? Clear wï¿½hrend Read
 - ? Multiple Threads auf Items
 
 ### Edge Cases
 - ? Null-Handling
 - ? Leere Collections
-- ? Doppelte Einträge
-- ? Große Datenmengen (10,000+ Items)
+- ? Doppelte Eintrï¿½ge
+- ? Groï¿½e Datenmengen (10,000+ Items)
 - ? Custom Comparers
 
 ### Persistierung
 - ? Auto-Load beim Bootstrap
-- ? Auto-Save bei Änderungen
+- ? Auto-Save bei ï¿½nderungen
 - ? Race Conditions (multiple Saves)
 - ? Fehler beim Laden/Speichern
 - ? Cancellation Tokens
@@ -331,10 +331,10 @@ public void ExampleTest()
     var store = new InMemoryDataStore<TestItem>();
     var item = new TestItem { Id = 1 };
     
-    // Act - Ausführung
+    // Act - Ausfï¿½hrung
     store.Add(item);
     
-    // Assert - Überprüfung
+    // Assert - ï¿½berprï¿½fung
     Assert.Single(store.Items);
 }
 ```
@@ -372,14 +372,14 @@ public void Test2() { Assert.Empty(_sharedStore.Items); } // Scheitert!
 ### Visual Studio
 
 1. Breakpoint im Test setzen
-2. Test mit **Debug Selected Tests** ausführen
+2. Test mit **Debug Selected Tests** ausfï¿½hren
 3. Debugger stoppt am Breakpoint
 
 ### VS Code
 
 1. `.vscode/launch.json` konfigurieren
 2. Breakpoint setzen
-3. F5 drücken
+3. F5 drï¿½cken
 
 ### Command Line
 
@@ -418,15 +418,15 @@ jobs:
 
 ## ?? Beitragen
 
-### Neue Tests hinzufügen
+### Neue Tests hinzufï¿½gen
 
-1. **Kategorie wählen**: Unit, Runtime, Integration, etc.
+1. **Kategorie wï¿½hlen**: Unit, Runtime, Integration, etc.
 2. **Test schreiben**: AAA-Pattern verwenden
 3. **Naming Convention**: Beschreibende Namen
-4. **Dokumentieren**: XML-Kommentare hinzufügen
-5. **Ausführen**: Sicherstellen, dass Test grün ist
+4. **Dokumentieren**: XML-Kommentare hinzufï¿½gen
+5. **Ausfï¿½hren**: Sicherstellen, dass Test grï¿½n ist
 
-### Test-Coverage erhöhen
+### Test-Coverage erhï¿½hen
 
 1. Fehlende Szenarien identifizieren
 2. Edge-Cases testen
