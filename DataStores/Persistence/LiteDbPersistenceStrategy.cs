@@ -4,7 +4,7 @@ using DataStores.Abstractions;
 namespace DataStores.Persistence;
 
 /// <summary>
-/// Persistierungs-Strategie für LiteDB.
+/// Persistierungs-Strategie für LiteDB mit Delta-Synchronisierung.
 /// Speichert und lädt Daten aus einer LiteDB-Datenbank.
 /// </summary>
 /// <typeparam name="T">Der Typ der zu persistierenden Elemente. Muss von <see cref="EntityBase"/> erben.</typeparam>
@@ -22,14 +22,18 @@ namespace DataStores.Persistence;
 /// <item><description>Thread-sicher</description></item>
 /// <item><description>Unterstützt LINQ-Queries</description></item>
 /// <item><description>Automatische ID-Vergabe für neue Entitäten</description></item>
+/// <item><description>Delta-basierte Synchronisierung (INSERT/DELETE)</description></item>
 /// </list>
 /// </para>
 /// <para>
-/// <b>SaveAllAsync - Delta-Synchronisierung:</b>
-/// Verwendet dieselbe bewährte Delta-Logik wie DataToolKit.LiteDbRepository.
+/// <b>Persistierungs-Strategie:</b>
 /// </para>
+/// <list type="bullet">
+/// <item><description>SaveAllAsync: Berechnet Delta und führt INSERT/DELETE aus</description></item>
+/// <item><description>UpdateSingleAsync: Effiziente Einzel-Entity-Updates via LiteCollection.Update</description></item>
+/// </list>
 /// </remarks>
-public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T> 
+public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
     where T : EntityBase
 {
     private readonly string _databasePath;
@@ -48,10 +52,19 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
     public LiteDbPersistenceStrategy(string databasePath, string? collectionName = null)
     {
         if (string.IsNullOrWhiteSpace(databasePath))
+        {
             throw new ArgumentNullException(nameof(databasePath));
+        }
 
         _databasePath = databasePath;
         _collectionName = collectionName ?? typeof(T).Name;
+    }
+
+    /// <inheritdoc/>
+    public void SetItemsProvider(Func<IReadOnlyList<T>>? itemsProvider)
+    {
+        // LiteDB braucht den Provider nicht - collection.Update() ist ausreichend
+        // No-Op: Methode existiert nur wegen Interface-Konformität
     }
 
     /// <inheritdoc/>
@@ -68,12 +81,10 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
             }
             catch (LiteException ex)
             {
-                // LiteDB-spezifische Fehler durchreichen (z.B. korrupte Datenbank)
                 throw new InvalidOperationException($"Fehler beim Laden aus LiteDB: {ex.Message}", ex);
             }
             catch (IOException ex)
             {
-                // Dateizugriffsfehler durchreichen
                 throw new InvalidOperationException($"Dateizugriffsfehler bei LiteDB: {ex.Message}", ex);
             }
         }
@@ -82,34 +93,68 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
     /// <inheritdoc/>
     /// <remarks>
     /// <para>
-    /// Synchronisiert den Store-Zustand mit der LiteDB-Datenbank (Delta-Save).
-    /// Verwendet dieselbe bewährte Delta-Logik wie DataToolKit.LiteDbRepository.
+    /// Berechnet das Delta zwischen dem aktuellen Store-Zustand und der Datenbank
+    /// und führt die notwendigen INSERT/DELETE-Operationen aus.
     /// </para>
     /// <para>
-    /// <b>Operationen:</b>
-    /// <list type="bullet">
-    /// <item><description>UPDATE: Items mit Id > 0 die in DB existieren UND inhaltlich geändert wurden</description></item>
-    /// <item><description>DELETE: Items in DB die nicht in items-Liste sind</description></item>
-    /// <item><description>INSERT: Items mit Id = 0 ODER Items mit Id > 0 die nicht in DB existieren</description></item>
-    /// </list>
-    /// </para>
-    /// <para>
-    /// <b>Transaktion:</b> Alle Operationen werden in einer LiteDB-Transaktion ausgeführt.
-    /// Bei Fehlern erfolgt automatisch ein Rollback.
-    /// </para>
-    /// <para>
-    /// <b>ID-Handling:</b> LiteDB schreibt automatisch vergebene IDs in die Objekte zurück.
-    /// Für EntityBase.Id ist dies standardmäßig konfiguriert.
+    /// <b>Implementierung:</b> Delegiert an die private SaveDeltaAsync-Methode.
     /// </para>
     /// </remarks>
     public Task SaveAllAsync(IReadOnlyList<T> items, CancellationToken cancellationToken = default)
     {
         if (items == null)
+        {
             throw new ArgumentNullException(nameof(items));
+        }
 
         lock (_lock)
         {
-            // Verzeichnis erstellen, falls nicht vorhanden
+            // DB-Zustand laden
+            using var db = new LiteDatabase(_databasePath);
+            var collection = db.GetCollection<T>(_collectionName);
+            var databaseItems = collection.FindAll().ToList();
+
+            // Delta berechnen
+            var diff = DataStoreDiffBuilder.ComputeDiff(items, databaseItems);
+
+            // An private SaveDeltaAsync delegieren
+            return SaveDeltaAsync(diff, cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// Speichert Delta-Änderungen transaktional (wird vom PersistentStoreDecorator via Reflection aufgerufen).
+    /// </summary>
+    /// <param name="diff">Das berechnete Diff mit Insert/Delete-Operationen.</param>
+    /// <param name="cancellationToken">Token zur Abbruchsteuerung.</param>
+    /// <returns>Ein Task, der die asynchrone Operation repräsentiert.</returns>
+    /// <remarks>
+    /// <para>
+    /// <b>Operationen:</b>
+    /// </para>
+    /// <list type="number">
+    /// <item><description>INSERT: Neue Entities (Id = 0) - LiteDB schreibt IDs automatisch zurück</description></item>
+    /// <item><description>DELETE: Entities die aus dem Store entfernt wurden</description></item>
+    /// </list>
+    /// <para>
+    /// <b>Transaktion:</b> Alle Operationen werden in einer LiteDB-Transaktion ausgeführt.
+    /// Bei Fehlern erfolgt automatisch ein Rollback.
+    /// </para>
+    /// </remarks>
+    private Task SaveDeltaAsync(DataStoreDiff<T> diff, CancellationToken cancellationToken = default)
+    {
+        if (diff == null)
+        {
+            throw new ArgumentNullException(nameof(diff));
+        }
+
+        if (!diff.HasChanges)
+        {
+            return Task.CompletedTask;
+        }
+
+        lock (_lock)
+        {
             var directory = Path.GetDirectoryName(_databasePath);
             if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
             {
@@ -118,76 +163,75 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
 
             using var db = new LiteDatabase(_databasePath);
             var collection = db.GetCollection<T>(_collectionName);
-            
-            // Aktuellen DB-Zustand laden
-            var existing = collection.FindAll().ToList();
-            
-            // Delta berechnen (wie in DataToolKit.LiteDbRepository)
-            var existingById = existing.Where(e => e.Id > 0).ToDictionary(e => e.Id);
-            var incomingById = items.Where(e => e.Id > 0).ToDictionary(e => e.Id);
-            
-            // UPDATE: Items mit Id > 0 die in DB existieren
-            var toUpdate = items.Where(i => i.Id > 0 && existingById.ContainsKey(i.Id)).ToList();
-            
-            // DELETE: IDs in DB die nicht mehr in incoming sind
-            var toDeleteIds = existingById.Keys.Except(incomingById.Keys).ToList();
-            
-            // INSERT: 
-            // (a) Neue Items (Id = 0)
-            // (b) Items mit Id > 0 die NICHT in DB existieren (missing IDs policy)
-            var toInsert = items.Where(i => i.Id == 0).ToList();
-            foreach (var item in items.Where(i => i.Id > 0))
+
+            if (!db.BeginTrans())
             {
-                if (!existingById.ContainsKey(item.Id))
-                {
-                    toInsert.Add(item);
-                }
-            }
-            
-            // Nur Transaktion starten wenn Änderungen vorhanden
-            if (toInsert.Count > 0 || toUpdate.Count > 0 || toDeleteIds.Count > 0)
-            {
-                if (!db.BeginTrans())
-                    throw new InvalidOperationException("Transaktion konnte nicht gestartet werden.");
-                
-                try
-                {
-                    // UPDATE: Bestehende Entities aktualisieren
-                    if (toUpdate.Count > 0)
-                    {
-                        foreach (var item in toUpdate)
-                        {
-                            collection.Update(item);
-                        }
-                    }
-                    
-                    // DELETE: Nicht mehr vorhandene Entities löschen
-                    if (toDeleteIds.Count > 0)
-                    {
-                        collection.DeleteMany(x => toDeleteIds.Contains(x.Id));
-                    }
-                    
-                    // INSERT: Neue Entities einfügen
-                    if (toInsert.Count > 0)
-                    {
-                        foreach (var item in toInsert)
-                        {
-                            // Insert schreibt die vergebene ID automatisch in item.Id zurück
-                            // Dies funktioniert weil wir oben den BsonMapper konfiguriert haben
-                            collection.Insert(item);
-                        }
-                    }
-                    
-                    db.Commit();
-                }
-                catch
-                {
-                    db.Rollback();
-                    throw;
-                }
+                throw new InvalidOperationException("Transaktion konnte nicht gestartet werden.");
             }
 
+            try
+            {
+                // INSERT: Neue Entities (LiteDB schreibt IDs automatisch zurück)
+                if (diff.ToInsert.Count > 0)
+                {
+                    foreach (var item in diff.ToInsert)
+                    {
+                        var id = collection.Insert(item);
+                    }
+                }
+
+                // DELETE: Bulk-Operation
+                if (diff.ToDelete.Count > 0)
+                {
+                    var idsToDelete = diff.ToDelete.Select(e => e.Id).ToList();
+                    collection.DeleteMany(x => idsToDelete.Contains(x.Id));
+                }
+
+                db.Commit();
+            }
+            catch
+            {
+                db.Rollback();
+                throw;
+            }
+        }
+
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Aktualisiert eine einzelne Entity (wird vom PersistentStoreDecorator bei PropertyChanged aufgerufen).
+    /// </summary>
+    /// <param name="entity">Die zu aktualisierende Entity (muss Id > 0 haben).</param>
+    /// <param name="cancellationToken">Token zur Abbruchsteuerung.</param>
+    /// <returns>Ein Task, der die asynchrone Operation repräsentiert.</returns>
+    /// <remarks>
+    /// <para>
+    /// LiteDB-Strategie: Effiziente Einzel-Entity-Update via LiteCollection.Update.
+    /// </para>
+    /// <para>
+    /// <b>Wichtig:</b> Entities mit Id ≤ 0 werden ignoriert (noch nicht persistiert).
+    /// </para>
+    /// </remarks>
+    public Task UpdateSingleAsync(T entity, CancellationToken cancellationToken = default)
+    {
+        if (entity == null)
+        {
+            throw new ArgumentNullException(nameof(entity));
+        }
+
+        if (entity.Id <= 0)
+        {
             return Task.CompletedTask;
         }
+
+        lock (_lock)
+        {
+            using var db = new LiteDatabase(_databasePath);
+            var collection = db.GetCollection<T>(_collectionName);
+            collection.Update(entity);
+        }
+
+        return Task.CompletedTask;
     }
 }

@@ -11,6 +11,7 @@ public class JsonFilePersistenceStrategy<T> : IPersistenceStrategy<T> where T : 
 {
     private readonly string _filePath;
     private readonly JsonSerializerOptions _jsonOptions;
+    private Func<IReadOnlyList<T>>? _itemsProvider;
 
     /// <summary>
     /// Initialisiert eine neue Instanz der <see cref="JsonFilePersistenceStrategy{T}"/> Klasse.
@@ -21,7 +22,9 @@ public class JsonFilePersistenceStrategy<T> : IPersistenceStrategy<T> where T : 
     public JsonFilePersistenceStrategy(string filePath, JsonSerializerOptions? jsonOptions = null)
     {
         if (string.IsNullOrWhiteSpace(filePath))
+        {
             throw new ArgumentNullException(nameof(filePath));
+        }
 
         _filePath = filePath;
         _jsonOptions = jsonOptions ?? new JsonSerializerOptions
@@ -29,6 +32,15 @@ public class JsonFilePersistenceStrategy<T> : IPersistenceStrategy<T> where T : 
             WriteIndented = true,
             PropertyNameCaseInsensitive = true
         };
+    }
+
+    /// <summary>
+    /// Legt den Items-Anbieter fest.
+    /// </summary>
+    /// <param name="itemsProvider">Die Funktion, die die Elemente bereitstellt.</param>
+    public void SetItemsProvider(Func<IReadOnlyList<T>>? itemsProvider)
+    {
+        _itemsProvider = itemsProvider;
     }
 
     /// <inheritdoc/>
@@ -67,7 +79,9 @@ public class JsonFilePersistenceStrategy<T> : IPersistenceStrategy<T> where T : 
     public async Task SaveAllAsync(IReadOnlyList<T> items, CancellationToken cancellationToken = default)
     {
         if (items == null)
+        {
             throw new ArgumentNullException(nameof(items));
+        }
 
         // Verzeichnis erstellen, falls nicht vorhanden
         var directory = Path.GetDirectoryName(_filePath);
@@ -78,5 +92,36 @@ public class JsonFilePersistenceStrategy<T> : IPersistenceStrategy<T> where T : 
 
         var json = JsonSerializer.Serialize(items, _jsonOptions);
         await File.WriteAllTextAsync(_filePath, json, cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// <para>
+    /// JSON-Strategie: Atomare Schreiboperation für die gesamte Datei.
+    /// </para>
+    /// <para>
+    /// Nutzt den ItemsProvider (vom PersistentStoreDecorator gesetzt) um die aktuelle 
+    /// Liste vom Store zu holen. Dadurch wird sichergestellt, dass bei PropertyChanged-Events 
+    /// die vollständige aktuelle Liste gespeichert wird.
+    /// </para>
+    /// </remarks>
+    public async Task UpdateSingleAsync(T item, CancellationToken cancellationToken = default)
+    {
+        if (item == null)
+        {
+            throw new ArgumentNullException(nameof(item));
+        }
+
+        if (_itemsProvider == null)
+        {
+            throw new InvalidOperationException(
+                "ItemsProvider wurde nicht gesetzt. " +
+                "UpdateSingleAsync erfordert einen ItemsProvider, der vom PersistentStoreDecorator " +
+                "über SetItemsProvider() bereitgestellt wird.");
+        }
+
+        // JSON-Strategie: Atomare Schreiboperation = komplettes Neu-Schreiben der aktuellen Liste
+        var currentItems = _itemsProvider();
+        await SaveAllAsync(currentItems, cancellationToken);
     }
 }

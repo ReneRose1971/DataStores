@@ -15,12 +15,20 @@ public class FakePersistenceStrategy<T> : IPersistenceStrategy<T> where T : clas
 
     public int LoadCallCount
     {
-        get { lock (_lock) return _loadCallCount; }
+        get { lock (_lock)
+            {
+                return _loadCallCount;
+            }
+        }
     }
 
     public int SaveCallCount
     {
-        get { lock (_lock) return _saveCallCount; }
+        get { lock (_lock)
+            {
+                return _saveCallCount;
+            }
+        }
     }
 
     public IReadOnlyList<T>? LastSavedItems { get; private set; }
@@ -48,6 +56,17 @@ public class FakePersistenceStrategy<T> : IPersistenceStrategy<T> where T : clas
             _data = items;
             return Task.CompletedTask;
         }
+    }
+
+    public Task UpdateSingleAsync(T item, CancellationToken cancellationToken = default)
+    {
+        // Fake: No-Op (Tests können SaveCallCount tracken)
+        return Task.CompletedTask;
+    }
+
+    public void SetItemsProvider(Func<IReadOnlyList<T>>? itemsProvider)
+    {
+        // Fake: No-Op
     }
 
     public void SetData(IReadOnlyList<T> data)

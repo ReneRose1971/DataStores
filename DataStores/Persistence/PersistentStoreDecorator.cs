@@ -34,11 +34,12 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
 {
     private readonly InMemoryDataStore<T> _innerStore;
     private readonly IPersistenceStrategy<T> _strategy;
+    private readonly bool _autoLoad;
     private readonly bool _autoSaveOnChange;
     private readonly SemaphoreSlim _saveSemaphore = new(1, 1);
     private readonly SemaphoreSlim _initSemaphore = new(1, 1);
     private readonly PropertyChangedBinder<T>? _propertyChangedBinder;
-    private IDisposable? _binderSubscription;
+    private readonly IDisposable? _binderSubscription;
     private bool _isInitialized;
     private bool _disposed;
 
@@ -88,19 +89,27 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
     {
         _innerStore = innerStore ?? throw new ArgumentNullException(nameof(innerStore));
         _strategy = strategy ?? throw new ArgumentNullException(nameof(strategy));
+        _autoLoad = autoLoad;
         _autoSaveOnChange = autoSaveOnChange;
+
+        // Gib der Strategie Zugriff auf die aktuelle Items-Liste
+        // (JSON braucht dies für UpdateSingleAsync, LiteDB ignoriert es)
+        _strategy.SetItemsProvider(() => _innerStore.Items);
 
         if (_autoSaveOnChange)
         {
             // Collection-Changes abonnieren
             _innerStore.Changed += OnInnerStoreChanged;
             
-            // PropertyChanged-Tracking einrichten (wenn Items INotifyPropertyChanged implementieren)
-            _propertyChangedBinder = new PropertyChangedBinder<T>(
-                enabled: true,
-                onEntityChanged: OnItemPropertyChanged);
-            
-            _binderSubscription = _propertyChangedBinder.AttachToDataStore(_innerStore);
+            // PropertyChanged-Tracking für INotifyPropertyChanged-Entities
+            if (typeof(T).IsAssignableTo(typeof(System.ComponentModel.INotifyPropertyChanged)))
+            {
+                _propertyChangedBinder = new PropertyChangedBinder<T>(
+                    enabled: true,
+                    onEntityChanged: OnItemPropertyChanged);
+                
+                _binderSubscription = _propertyChangedBinder.AttachToDataStore(_innerStore);
+            }
         }
     }
 
@@ -126,7 +135,7 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
     /// </remarks>
     public void Add(T item) => _innerStore.Add(item);
 
-    /// <inheritdoc/>
+    /// <inheritdoc>
     /// <remarks>
     /// Delegiert an den inneren Store. Wenn Auto-Save aktiviert ist, werden die Elemente automatisch gespeichert.
     /// </remarks>
@@ -173,10 +182,16 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
         try
         {
             if (_isInitialized)
-                return;
+            { 
+            return;
+            }
 
-            var items = await _strategy.LoadAllAsync(cancellationToken);
-            _innerStore.AddRange(items);
+            if (_autoLoad)
+            {
+                var items = await _strategy.LoadAllAsync(cancellationToken);
+                _innerStore.AddRange(items);
+            }
+            
             _isInitialized = true;
         }
         finally
@@ -205,7 +220,9 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
     private async void OnInnerStoreChanged(object? sender, DataStoreChangedEventArgs<T> e)
     {
         if (_disposed)
+        {
             return;
+        }
 
         await SaveAsync();
     }
@@ -217,9 +234,26 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
     private async void OnItemPropertyChanged(T entity)
     {
         if (_disposed)
+        {
             return;
+        }
 
-        await SaveAsync();
+        try
+        {
+            await _saveSemaphore.WaitAsync();
+            try
+            {
+                await _strategy.UpdateSingleAsync(entity);
+            }
+            finally
+            {
+                _saveSemaphore.Release();
+            }
+        }
+        catch (Exception)
+        {
+            // In Produktionsumgebungen sollte hier geloggt werden
+        }
     }
 
     /// <summary>
@@ -263,7 +297,9 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
     public void Dispose()
     {
         if (_disposed)
+        {
             return;
+        }
 
         if (_autoSaveOnChange)
         {

@@ -253,6 +253,16 @@ public class PersistentStoreDecorator_RaceConditionTests
             SaveCallCount++;
             return Task.CompletedTask;
         }
+
+        public Task UpdateSingleAsync(T item, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public void SetItemsProvider(Func<IReadOnlyList<T>>? itemsProvider)
+        {
+            // No-Op
+        }
     }
 
     private class ThrowingPersistenceStrategy<T> : IPersistenceStrategy<T> where T : class
@@ -269,17 +279,31 @@ public class PersistentStoreDecorator_RaceConditionTests
         public Task<IReadOnlyList<T>> LoadAllAsync(CancellationToken cancellationToken = default)
         {
             if (_throwOnLoad)
+            {
                 throw new InvalidOperationException("Load failed");
-            
+            }
+
             return Task.FromResult<IReadOnlyList<T>>(Array.Empty<T>());
         }
 
         public Task SaveAllAsync(IReadOnlyList<T> items, CancellationToken cancellationToken = default)
         {
             if (_throwOnSave)
+            {
                 throw new InvalidOperationException("Save failed");
-            
+            }
+
             return Task.CompletedTask;
+        }
+
+        public Task UpdateSingleAsync(T item, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public void SetItemsProvider(Func<IReadOnlyList<T>>? itemsProvider)
+        {
+            // No-Op
         }
     }
 }

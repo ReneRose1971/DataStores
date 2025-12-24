@@ -20,17 +20,29 @@ public class SpyPersistenceStrategy<T> : IPersistenceStrategy<T> where T : class
 
     public int SaveCallCount
     {
-        get { lock (_lock) return _saveCallCount; }
+        get { lock (_lock)
+            {
+                return _saveCallCount;
+            }
+        }
     }
 
     public int LoadCallCount
     {
-        get { lock (_lock) return _loadCallCount; }
+        get { lock (_lock)
+            {
+                return _loadCallCount;
+            }
+        }
     }
 
     public IReadOnlyList<IReadOnlyList<T>> SavedSnapshots
     {
-        get { lock (_lock) return _savedSnapshots.AsReadOnly(); }
+        get { lock (_lock)
+            {
+                return _savedSnapshots.AsReadOnly();
+            }
+        }
     }
 
     public IReadOnlyList<T>? LastSavedSnapshot
@@ -69,6 +81,17 @@ public class SpyPersistenceStrategy<T> : IPersistenceStrategy<T> where T : class
             _savedSnapshots.Add(items.ToList()); // Snapshot speichern
             return Task.CompletedTask;
         }
+    }
+
+    public Task UpdateSingleAsync(T item, CancellationToken cancellationToken = default)
+    {
+        // Spy: No-Op (Tests tracken SaveCallCount)
+        return Task.CompletedTask;
+    }
+
+    public void SetItemsProvider(Func<IReadOnlyList<T>>? itemsProvider)
+    {
+        // Spy: No-Op
     }
 
     public void Reset()

@@ -36,4 +36,15 @@ public class SlowLoadStrategy<T> : IPersistenceStrategy<T> where T : class
         SaveCallCount++;
         return Task.CompletedTask;
     }
+
+    public Task UpdateSingleAsync(T item, CancellationToken cancellationToken = default)
+    {
+        // Slow strategy: No-Op
+        return Task.CompletedTask;
+    }
+
+    public void SetItemsProvider(Func<IReadOnlyList<T>>? itemsProvider)
+    {
+        // No-Op
+    }
 }

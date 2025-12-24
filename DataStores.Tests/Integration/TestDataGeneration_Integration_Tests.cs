@@ -153,7 +153,13 @@ public class TestDataGeneration_Integration_Tests : IAsyncLifetime
     public void QueryOperations_Should_WorkWithGeneratedItems()
     {
         // Arrange
-        var factory = new ObjectFillerTestDataFactory<TestEntity>(seed: 42);
+        var factory = new ObjectFillerTestDataFactory<TestEntity>(
+            seed: 42,
+            setupAction: filler =>
+            {
+                filler.Setup().OnProperty(x => x.Age).Use(() => Random.Shared.Next(18, 80));
+            });
+        
         var store = _dataStores.GetGlobal<TestEntity>();
         var items = factory.CreateMany(200).ToList();
         store.AddRange(items);

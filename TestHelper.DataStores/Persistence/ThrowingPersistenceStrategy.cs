@@ -25,16 +25,26 @@ public class ThrowingPersistenceStrategy<T> : IPersistenceStrategy<T> where T : 
     public Task<IReadOnlyList<T>> LoadAllAsync(CancellationToken cancellationToken = default)
     {
         if (_throwOnLoad)
+        {
             throw new InvalidOperationException("Load failed");
-        
+        }
+
         return Task.FromResult<IReadOnlyList<T>>(Array.Empty<T>());
     }
 
     public Task SaveAllAsync(IReadOnlyList<T> items, CancellationToken cancellationToken = default)
     {
-        if (_throwOnSave)
-            throw new InvalidOperationException("Save failed");
-        
+        return _throwOnSave ? throw new InvalidOperationException("Save failed") : Task.CompletedTask;
+    }
+
+    public Task UpdateSingleAsync(T item, CancellationToken cancellationToken = default)
+    {
+        // Throwing strategy: No-Op (could be extended with throwOnUpdate if needed)
         return Task.CompletedTask;
+    }
+
+    public void SetItemsProvider(Func<IReadOnlyList<T>>? itemsProvider)
+    {
+        // No-Op
     }
 }

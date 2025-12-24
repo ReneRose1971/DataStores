@@ -178,4 +178,105 @@ public class PersistentStoreDecoratorTests
         Assert.Throws<ArgumentNullException>(() => 
             new PersistentStoreDecorator<TestItem>(innerStore, null!, false, false));
     }
+
+    [Fact]
+    public async Task InitializeAsync_WithAutoLoadTrue_Should_LoadData()
+    {
+        // Arrange
+        var strategy = new FakePersistenceStrategy<TestItem>(new[]
+        {
+            new TestItem { Id = 1, Name = "Item1" },
+            new TestItem { Id = 2, Name = "Item2" }
+        });
+        var innerStore = new InMemoryDataStore<TestItem>();
+        var decorator = new PersistentStoreDecorator<TestItem>(
+            innerStore, strategy, autoLoad: true, autoSaveOnChange: false);
+
+        // Act
+        await decorator.InitializeAsync();
+
+        // Assert
+        Assert.Equal(2, decorator.Items.Count);
+        Assert.Equal(1, strategy.LoadCallCount);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_WithAutoLoadFalse_Should_NotLoadData()
+    {
+        // Arrange
+        var strategy = new FakePersistenceStrategy<TestItem>(new[]
+        {
+            new TestItem { Id = 1, Name = "Item1" },
+            new TestItem { Id = 2, Name = "Item2" }
+        });
+        var innerStore = new InMemoryDataStore<TestItem>();
+        var decorator = new PersistentStoreDecorator<TestItem>(
+            innerStore, strategy, autoLoad: false, autoSaveOnChange: false);
+
+        // Act
+        await decorator.InitializeAsync();
+
+        // Assert
+        Assert.Empty(decorator.Items);
+        Assert.Equal(0, strategy.LoadCallCount);
+    }
+
+    [Fact]
+    public void Constructor_WithAutoLoadFalse_Should_NotLoadImmediately()
+    {
+        // Arrange
+        var strategy = new FakePersistenceStrategy<TestItem>(new[]
+        {
+            new TestItem { Id = 1, Name = "Item1" }
+        });
+        var innerStore = new InMemoryDataStore<TestItem>();
+
+        // Act
+        var decorator = new PersistentStoreDecorator<TestItem>(
+            innerStore, strategy, autoLoad: false, autoSaveOnChange: false);
+
+        // Assert - No data loaded until InitializeAsync is called
+        Assert.Empty(decorator.Items);
+        Assert.Equal(0, strategy.LoadCallCount);
+    }
+
+    [Fact]
+    public void Constructor_WithAutoLoadTrue_Should_NotLoadImmediately()
+    {
+        // Arrange
+        var strategy = new FakePersistenceStrategy<TestItem>(new[]
+        {
+            new TestItem { Id = 1, Name = "Item1" }
+        });
+        var innerStore = new InMemoryDataStore<TestItem>();
+
+        // Act
+        var decorator = new PersistentStoreDecorator<TestItem>(
+            innerStore, strategy, autoLoad: true, autoSaveOnChange: false);
+
+        // Assert - No data loaded until InitializeAsync is called
+        Assert.Empty(decorator.Items);
+        Assert.Equal(0, strategy.LoadCallCount);
+    }
+
+    [Fact]
+    public async Task InitializeAsync_WithAutoLoadFalse_CalledTwice_Should_NotLoad()
+    {
+        // Arrange
+        var strategy = new FakePersistenceStrategy<TestItem>(new[]
+        {
+            new TestItem { Id = 1, Name = "Item1" }
+        });
+        var innerStore = new InMemoryDataStore<TestItem>();
+        var decorator = new PersistentStoreDecorator<TestItem>(
+            innerStore, strategy, autoLoad: false, autoSaveOnChange: false);
+
+        // Act
+        await decorator.InitializeAsync();
+        await decorator.InitializeAsync(); // Second call
+
+        // Assert - No data loaded at all
+        Assert.Empty(decorator.Items);
+        Assert.Equal(0, strategy.LoadCallCount);
+    }
 }

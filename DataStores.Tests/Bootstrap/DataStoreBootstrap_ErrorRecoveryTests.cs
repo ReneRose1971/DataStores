@@ -77,7 +77,7 @@ public class DataStoreBootstrap_ErrorRecoveryTests
         var module = new DataStoresServiceModule();
         module.Register(services);
         
-        var slowStrategy = new SlowInitStrategy<TestItem>(TimeSpan.FromSeconds(10));
+        var slowStrategy = new SlowInitStrategy<TestItem>(TimeSpan.FromSeconds(10), Array.Empty<TestItem>());
         var innerStore = new InMemoryDataStore<TestItem>();
         var decorator = new PersistentStoreDecorator<TestItem>(
             innerStore, slowStrategy, autoLoad: true, autoSaveOnChange: false);
@@ -267,21 +267,33 @@ public class DataStoreBootstrap_ErrorRecoveryTests
     private class SlowInitStrategy<T> : IPersistenceStrategy<T> where T : class
     {
         private readonly TimeSpan _delay;
+        private readonly IReadOnlyList<T> _data;
 
-        public SlowInitStrategy(TimeSpan delay)
+        public SlowInitStrategy(TimeSpan delay, IReadOnlyList<T> data)
         {
             _delay = delay;
+            _data = data;
         }
 
         public async Task<IReadOnlyList<T>> LoadAllAsync(CancellationToken cancellationToken = default)
         {
             await Task.Delay(_delay, cancellationToken);
-            return Array.Empty<T>();
+            return _data;
         }
 
         public Task SaveAllAsync(IReadOnlyList<T> items, CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
+        }
+
+        public Task UpdateSingleAsync(T item, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public void SetItemsProvider(Func<IReadOnlyList<T>>? itemsProvider)
+        {
+            // No-Op
         }
     }
 
