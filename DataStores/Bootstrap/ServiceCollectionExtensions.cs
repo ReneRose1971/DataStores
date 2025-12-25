@@ -4,8 +4,14 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DataStores.Bootstrap;
 
 /// <summary>
-/// Provides extension methods for registering DataStores services with dependency injection.
+/// REGISTRATION EXTENSIONS for IDataStoreRegistrar instances.
+/// Use ONLY during startup configuration to register store registrars.
 /// </summary>
+/// <remarks>
+/// These extensions are intended for external callers (application startup code) to register
+/// their own IDataStoreRegistrar implementations with the DI container.
+/// Do NOT use for general service registration or feature code.
+/// </remarks>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
@@ -14,6 +20,14 @@ public static class ServiceCollectionExtensions
     /// <typeparam name="TRegistrar">The registrar type.</typeparam>
     /// <param name="services">The service collection.</param>
     /// <returns>The service collection for chaining.</returns>
+    /// <remarks>
+    /// Call during startup configuration before building the service provider.
+    /// </remarks>
+    /// <example>
+    /// <code>
+    /// services.AddDataStoreRegistrar&lt;ProductStoreRegistrar&gt;();
+    /// </code>
+    /// </example>
     public static IServiceCollection AddDataStoreRegistrar<TRegistrar>(this IServiceCollection services)
         where TRegistrar : class, IDataStoreRegistrar
     {
@@ -28,13 +42,12 @@ public static class ServiceCollectionExtensions
     /// <param name="registrar">The registrar instance to register.</param>
     /// <returns>The service collection for chaining.</returns>
     /// <remarks>
-    /// Diese Methode erlaubt die Registrierung von Registrar-Instanzen,
-    /// die Konfiguration über ihren Konstruktor erhalten haben.
-    /// Dies vermeidet die Notwendigkeit, Konfigurationsobjekte separat zu registrieren.
+    /// This method allows registration of registrar instances that receive configuration via constructor.
+    /// Useful when registrars need configuration parameters like file paths or connection strings.
     /// </remarks>
     /// <example>
     /// <code>
-    /// services.AddDataStoreRegistrar(new MyRegistrar(dbPath, jsonPath));
+    /// services.AddDataStoreRegistrar(new ProductStoreRegistrar(dbPath));
     /// </code>
     /// </example>
     public static IServiceCollection AddDataStoreRegistrar(this IServiceCollection services, IDataStoreRegistrar registrar)

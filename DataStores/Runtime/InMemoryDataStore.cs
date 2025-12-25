@@ -3,15 +3,29 @@ using DataStores.Abstractions;
 namespace DataStores.Runtime;
 
 /// <summary>
-/// Bietet eine In-Memory-Implementierung von <see cref="IDataStore{T}"/>.
-/// Diese Klasse ist thread-sicher und unterstützt optionale SynchronizationContext-basierte Event-Marshalling.
+/// In-memory implementation of <see cref="IDataStore{T}"/>.
+/// Thread-safe with optional SynchronizationContext-based event marshalling.
 /// </summary>
-/// <typeparam name="T">Der Typ der Elemente im Store. Muss ein Referenztyp sein.</typeparam>
+/// <typeparam name="T">The type of items in the store. Must be a reference type.</typeparam>
 /// <remarks>
-/// Die Klasse verwendet intern eine <see cref="List{T}"/> für die Speicherung und
-/// ein Lock-Objekt für Thread-Sicherheit. Alle öffentlichen Operationen sind thread-sicher.
-/// Events können optional auf einem bestimmten SynchronizationContext ausgeführt werden,
-/// was nützlich ist für UI-Anwendungen (WPF, WinForms, MAUI).
+/// <para>
+/// Application code MUST obtain instances via <see cref="IDataStores"/> facade:
+/// </para>
+/// <list type="bullet">
+/// <item><description><see cref="IDataStores.GetGlobal{T}"/> - For global stores</description></item>
+/// <item><description><see cref="IDataStores.CreateLocal{T}"/> - For local stores</description></item>
+/// </list>
+/// <para>
+/// Direct instantiation is allowed ONLY for:
+/// </para>
+/// <list type="bullet">
+/// <item><description>Infrastructure components (registrars, decorators)</description></item>
+/// <item><description>Test scenarios</description></item>
+/// </list>
+/// <para>
+/// This class uses a <see cref="List{T}"/> internally with lock-based synchronization for thread safety.
+/// Events can optionally be marshalled to a specific SynchronizationContext (useful for UI applications).
+/// </para>
 /// </remarks>
 public class InMemoryDataStore<T> : IDataStore<T> where T : class
 {
@@ -21,10 +35,6 @@ public class InMemoryDataStore<T> : IDataStore<T> where T : class
     private readonly object _lock = new();
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Diese Property gibt immer eine neue Kopie der Liste zurück, um Thread-Sicherheit zu gewährleisten.
-    /// Änderungen an der zurückgegebenen Liste beeinflussen nicht den internen Zustand des Stores.
-    /// </remarks>
     public IReadOnlyList<T> Items
     {
         get
@@ -37,38 +47,16 @@ public class InMemoryDataStore<T> : IDataStore<T> where T : class
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Events werden außerhalb von Locks ausgelöst, um Deadlocks zu vermeiden.
-    /// Wenn ein SynchronizationContext gesetzt ist, werden Events auf diesem Context gemarshallt.
-    /// </remarks>
     public event EventHandler<DataStoreChangedEventArgs<T>>? Changed;
 
     /// <summary>
-    /// Initialisiert eine neue Instanz der <see cref="InMemoryDataStore{T}"/> Klasse.
+    /// Initializes a new instance of the <see cref="InMemoryDataStore{T}"/> class.
     /// </summary>
-    /// <param name="comparer">
-    /// Optionaler Gleichheitsvergleicher für Elemente. 
-    /// Wenn null, wird <see cref="EqualityComparer{T}.Default"/> verwendet.
-    /// </param>
-    /// <param name="synchronizationContext">
-    /// Optionaler Synchronisationskontext für Event-Aufruf. 
-    /// Wenn null, werden Events synchron auf dem aufrufenden Thread ausgelöst.
-    /// Nützlich für UI-Anwendungen, um Events auf dem UI-Thread auszuführen.
-    /// </param>
-    /// <example>
-    /// <code>
-    /// // Standard-Store
-    /// var store = new InMemoryDataStore&lt;Product&gt;();
-    /// 
-    /// // Mit Custom Comparer
-    /// var comparer = new ProductIdComparer();
-    /// var store = new InMemoryDataStore&lt;Product&gt;(comparer);
-    /// 
-    /// // Mit UI-Thread-Context (WPF)
-    /// var syncContext = SynchronizationContext.Current;
-    /// var store = new InMemoryDataStore&lt;Product&gt;(null, syncContext);
-    /// </code>
-    /// </example>
+    /// <param name="comparer">Optional equality comparer for items. If null, uses <see cref="EqualityComparer{T}.Default"/>.</param>
+    /// <param name="synchronizationContext">Optional synchronization context for events. If null, events are raised synchronously on calling thread.</param>
+    /// <remarks>
+    /// For application code, use <see cref="IDataStores"/> methods instead of direct instantiation.
+    /// </remarks>
     public InMemoryDataStore(
         IEqualityComparer<T>? comparer = null,
         SynchronizationContext? synchronizationContext = null)
@@ -79,10 +67,6 @@ public class InMemoryDataStore<T> : IDataStore<T> where T : class
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Diese Methode ist thread-sicher. Das Element wird zur Liste hinzugefügt
-    /// und ein <see cref="Changed"/> Event wird mit <see cref="DataStoreChangeType.Add"/> ausgelöst.
-    /// </remarks>
     public void Add(T item)
     {
         lock (_lock)
@@ -93,11 +77,6 @@ public class InMemoryDataStore<T> : IDataStore<T> where T : class
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Diese Methode ist thread-sicher und effizienter als mehrfache Aufrufe von <see cref="Add"/>,
-    /// da nur ein Lock und ein Event ausgelöst werden.
-    /// Wenn die Sammlung leer ist, wird keine Operation durchgeführt.
-    /// </remarks>
     public void AddRange(IEnumerable<T> items)
     {
         var itemList = items.ToList();
@@ -112,10 +91,6 @@ public class InMemoryDataStore<T> : IDataStore<T> where T : class
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Diese Methode ist thread-sicher. Der Vergleich verwendet den konfigurierten <see cref="_comparer"/>.
-    /// Wenn das Element nicht gefunden wird, wird kein Event ausgelöst.
-    /// </remarks>
     public bool Remove(T item)
     {
         bool removed;
@@ -142,10 +117,6 @@ public class InMemoryDataStore<T> : IDataStore<T> where T : class
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Diese Methode ist thread-sicher. Alle Elemente werden aus der Liste entfernt
-    /// und ein <see cref="Changed"/> Event wird mit <see cref="DataStoreChangeType.Clear"/> ausgelöst.
-    /// </remarks>
     public void Clear()
     {
         lock (_lock)
@@ -156,9 +127,6 @@ public class InMemoryDataStore<T> : IDataStore<T> where T : class
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Diese Methode ist thread-sicher. Der Vergleich verwendet den konfigurierten <see cref="_comparer"/>.
-    /// </remarks>
     public bool Contains(T item)
     {
         lock (_lock)
@@ -167,14 +135,6 @@ public class InMemoryDataStore<T> : IDataStore<T> where T : class
         }
     }
 
-    /// <summary>
-    /// Löst das <see cref="Changed"/> Event aus.
-    /// </summary>
-    /// <param name="args">Die Event-Argumente mit Details zur Änderung.</param>
-    /// <remarks>
-    /// Diese Methode wird außerhalb von Locks aufgerufen, um Deadlocks zu vermeiden.
-    /// Wenn ein SynchronizationContext gesetzt ist, wird das Event auf diesem Context ausgeführt.
-    /// </remarks>
     private void OnChanged(DataStoreChangedEventArgs<T> args)
     {
         var handler = Changed;

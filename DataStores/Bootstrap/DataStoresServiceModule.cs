@@ -6,44 +6,44 @@ using Microsoft.Extensions.DependencyInjection;
 namespace DataStores.Bootstrap;
 
 /// <summary>
-/// Service-Modul für DataStores: Registriert alle Kern-Services für das DataStores-Framework.
+/// INFRASTRUCTURE SERVICE MODULE for DataStores framework.
+/// Registers core services required by the DataStores framework.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Dieses Modul registriert alle grundlegenden Services, die für das DataStores-Framework
-/// benötigt werden, einschließlich:
+/// This module is INTERNAL INFRASTRUCTURE and registers:
 /// </para>
 /// <list type="bullet">
-/// <item><see cref="IGlobalStoreRegistry"/> - Zentrale Registry für globale DataStores</item>
-/// <item><see cref="ILocalDataStoreFactory"/> - Factory für lokale DataStores</item>
-/// <item><see cref="IDataStores"/> - Haupt-Facade für den Zugriff auf DataStores</item>
+/// <item><description><see cref="IGlobalStoreRegistry"/> - Registry for global stores (infrastructure only)</description></item>
+/// <item><description><see cref="ILocalDataStoreFactory"/> - Factory for local stores (infrastructure only)</description></item>
+/// <item><description><see cref="IDataStores"/> - PRIMARY API facade for application code</description></item>
 /// </list>
 /// <para>
-/// <b>Verwendung:</b>
+/// Application code MUST use ONLY <see cref="IDataStores"/> after registration.
 /// </para>
+/// </remarks>
+/// <example>
 /// <code>
-/// // In Program.cs oder Startup.cs
+/// // Automatic registration via ServiceModule pattern
 /// var builder = Host.CreateApplicationBuilder(args);
-/// 
-/// // Automatische Registrierung via ServiceModule-Pattern
 /// builder.Services.AddModulesFromAssemblies(
 ///     typeof(Program).Assembly,
 ///     typeof(DataStoresServiceModule).Assembly);
 /// 
 /// var app = builder.Build();
-/// await app.RunAsync();
+/// await DataStoreBootstrap.RunAsync(app.Services);
 /// </code>
-/// <para>
-/// <b>Alternative:</b> Verwenden Sie <see cref="ServiceCollectionExtensions.AddDataStoresCore"/>
-/// für eine noch einfachere Registrierung ohne explizite Modul-Instanziierung.
-/// </para>
-/// </remarks>
+/// </example>
 public sealed class DataStoresServiceModule : IServiceModule
 {
     /// <summary>
-    /// Registriert alle DataStores-Kern-Services im Dependency Injection Container.
+    /// Registers all DataStores core services in the dependency injection container.
     /// </summary>
-    /// <param name="services">Die Service-Collection, in die registriert werden soll.</param>
+    /// <param name="services">The service collection.</param>
+    /// <remarks>
+    /// This method is called automatically by the Common.Bootstrap framework.
+    /// Do NOT call manually from application code.
+    /// </remarks>
     public void Register(IServiceCollection services)
     {
         services.AddSingleton<IGlobalStoreRegistry, GlobalStoreRegistry>();

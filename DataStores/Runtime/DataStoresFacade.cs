@@ -3,12 +3,18 @@ using DataStores.Abstractions;
 namespace DataStores.Runtime;
 
 /// <summary>
-/// Facade-Implementierung für den Zugriff auf globale und die Erstellung lokaler Datenspeicher.
+/// PRIMARY API FACADE implementation for accessing global and creating local data stores.
+/// Application code MUST use IDataStores, NEVER instantiate this class directly.
 /// </summary>
 /// <remarks>
-/// Diese Klasse dient als zentrale Anlaufstelle für alle DataStore-Operationen.
-/// Sie koordiniert die Kommunikation zwischen der <see cref="IGlobalStoreRegistry"/> 
-/// und der <see cref="ILocalDataStoreFactory"/>, um eine einheitliche API bereitzustellen.
+/// <para>
+/// This class coordinates communication between <see cref="IGlobalStoreRegistry"/> 
+/// and <see cref="ILocalDataStoreFactory"/> to provide a unified API.
+/// </para>
+/// <para>
+/// Registered as Singleton via <see cref="Bootstrap.DataStoresServiceModule"/>.
+/// Application code receives this via dependency injection through <see cref="IDataStores"/>.
+/// </para>
 /// </remarks>
 public class DataStoresFacade : IDataStores
 {
@@ -16,20 +22,13 @@ public class DataStoresFacade : IDataStores
     private readonly ILocalDataStoreFactory _localFactory;
 
     /// <summary>
-    /// Initialisiert eine neue Instanz der <see cref="DataStoresFacade"/> Klasse.
+    /// Initializes a new instance of the <see cref="DataStoresFacade"/> class.
     /// </summary>
-    /// <param name="registry">
-    /// Die globale Store-Registry für den Zugriff auf application-wide Singleton-Stores.
-    /// </param>
-    /// <param name="localFactory">
-    /// Die Factory zum Erstellen isolierter lokaler Stores.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// Wird ausgelöst, wenn <paramref name="registry"/> oder <paramref name="localFactory"/> null ist.
-    /// </exception>
+    /// <param name="registry">The global store registry for accessing application-wide singleton stores.</param>
+    /// <param name="localFactory">The factory for creating isolated local stores.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="registry"/> or <paramref name="localFactory"/> is null.</exception>
     /// <remarks>
-    /// Diese Instanz wird typischerweise über Dependency Injection bereitgestellt
-    /// und sollte als Singleton registriert werden.
+    /// This constructor is called by dependency injection. Do NOT instantiate directly.
     /// </remarks>
     public DataStoresFacade(IGlobalStoreRegistry registry, ILocalDataStoreFactory localFactory)
     {
@@ -39,11 +38,11 @@ public class DataStoresFacade : IDataStores
 
     /// <inheritdoc/>
     /// <remarks>
-    /// Delegiert den Aufruf an die <see cref="IGlobalStoreRegistry.ResolveGlobal{T}"/> Methode.
-    /// Globale Stores sind application-wide Singletons und werden von allen Teilen der Anwendung geteilt.
+    /// Delegates the call to the <see cref="IGlobalStoreRegistry.ResolveGlobal{T}"/> method.
+    /// Global stores are application-wide singletons and are shared by all parts of the application.
     /// </remarks>
     /// <exception cref="GlobalStoreNotRegisteredException">
-    /// Wird ausgelöst, wenn kein globaler Store für Typ <typeparamref name="T"/> registriert wurde.
+    /// Thrown when no global store is registered for the type <typeparamref name="T"/>.
     /// </exception>
     public IDataStore<T> GetGlobal<T>() where T : class
     {
@@ -52,9 +51,9 @@ public class DataStoresFacade : IDataStores
 
     /// <inheritdoc/>
     /// <remarks>
-    /// Erstellt einen neuen, isolierten lokalen Store, der unabhängig von globalen Stores ist.
-    /// Lokale Stores sind nützlich für temporäre Daten, Dialoge, Formulare oder andere
-    /// Szenarien, in denen Isolation erforderlich ist.
+    /// Creates a new, isolated local store that is independent of global stores.
+    /// Local stores are useful for temporary data, dialogs, forms, or other
+    /// scenarios where isolation is required.
     /// </remarks>
     public IDataStore<T> CreateLocal<T>(IEqualityComparer<T>? comparer = null) where T : class
     {
@@ -64,20 +63,20 @@ public class DataStoresFacade : IDataStores
     /// <inheritdoc/>
     /// <remarks>
     /// <para>
-    /// Erstellt einen neuen lokalen Store und füllt ihn mit einer gefilterten Kopie der Daten
-    /// aus dem globalen Store. Dies ist nützlich für:
+    /// Creates a new local store and populates it with a filtered copy of the data
+    /// from the global store. This is useful for:
     /// </para>
     /// <list type="bullet">
-    /// <item><description>Arbeiten mit einer Teilmenge globaler Daten</description></item>
-    /// <item><description>Isolierte Bearbeitung ohne Auswirkung auf globale Daten</description></item>
-    /// <item><description>Temporäre Filterung für UI-Szenarien</description></item>
+    /// <item><description>Working with a subset of global data</description></item>
+    /// <item><description>Isolated editing without affecting global data</description></item>
+    /// <item><description>Temporary filtering for UI scenarios</description></item>
     /// </list>
     /// <para>
-    /// Änderungen am lokalen Store beeinflussen NICHT den globalen Store.
+    /// Changes to the local store do NOT affect the global store.
     /// </para>
     /// </remarks>
     /// <exception cref="GlobalStoreNotRegisteredException">
-    /// Wird ausgelöst, wenn kein globaler Store für Typ <typeparamref name="T"/> registriert wurde.
+    /// Thrown when no global store is registered for the type <typeparamref name="T"/>.
     /// </exception>
     public IDataStore<T> CreateLocalSnapshotFromGlobal<T>(
         Func<T, bool>? predicate = null,

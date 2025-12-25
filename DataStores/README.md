@@ -5,8 +5,10 @@ Eine moderne .NET 8 Bibliothek für die Verwaltung von typsicheren In-Memory-Dat
 ## Inhaltsverzeichnis
 
 - [Übersicht](#übersicht)
+- [Usage Contract (verbindlich)](#usage-contract-verbindlich)
 - [Installation](#installation)
 - [Schnellstart](#schnellstart)
+- [Application Startup Flow](#application-startup-flow)
 - [Kernkonzepte](#kernkonzepte)
 - [Dokumentation](#dokumentation)
 - [Beispiele](#beispiele)
@@ -27,6 +29,82 @@ DataStores ist eine leistungsstarke Bibliothek, die eine flexible und typsichere
 - **UI-Thread-Support**: SynchronizationContext für WPF/WinForms/MAUI
 - **Bulk-Operationen**: AddRange für performante Massen-Operationen
 - **Flexible Filter**: Snapshots mit Prädikaten und Custom Comparers
+
+## Usage Contract (verbindlich)
+
+### MUST: Zugriff ausschließlich über IDataStores
+
+- **Application code MUST access stores ONLY via `IDataStores` facade**
+- Use `IDataStores.GetGlobal<T>()` for global stores
+- Use `IDataStores.CreateLocal<T>()` for local stores
+- NEVER directly instantiate `InMemoryDataStore<T>`, `PersistentStoreDecorator<T>`, or other store types in application code
+
+### MUST: Registration nur via IDataStoreRegistrar
+
+- **Registration MUST occur ONLY within `IDataStoreRegistrar.Register()` implementations**
+- Register stores during startup before first access
+- Do NOT resolve or access stores within the Register method
+- Use `ServiceCollectionExtensions.AddDataStoreRegistrar<T>()` to register registrars
+
+### MUST: Bootstrap vor erster Nutzung
+
+- **`DataStoreBootstrap.RunAsync()` MUST be executed once during application startup**
+- Call after building the service provider
+- Do NOT call from feature code, viewmodels, or services
+
+### MUST NOT: Direkte Nutzung von Infrastruktur-Komponenten
+
+- **Application code MUST NOT depend on infrastructure types**:
+  - `IGlobalStoreRegistry` / `GlobalStoreRegistry`
+  - `ILocalDataStoreFactory` / `LocalDataStoreFactory`
+  - Direct instantiation of decorators or store implementations
+- These types are for internal framework use only
+- Bypassing the facade prevents proper lifecycle and initialization
+
+### Anti-Patterns (NEVER do this)
+
+❌ **WRONG: Direct store instantiation in application code**
+```csharp
+// NEVER do this in feature code
+var store = new InMemoryDataStore<Product>();
+var store = new PersistentStoreDecorator<Product>(...);
+```
+
+❌ **WRONG: Direct registry access in application code**
+```csharp
+// NEVER do this in feature code
+var registry = serviceProvider.GetRequiredService<IGlobalStoreRegistry>();
+var store = registry.ResolveGlobal<Product>();
+```
+
+❌ **WRONG: Store access in registrar**
+```csharp
+public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
+{
+    registry.RegisterGlobal(new InMemoryDataStore<Product>());
+    // NEVER access stores here
+    var store = registry.ResolveGlobal<Product>(); // WRONG!
+}
+```
+
+✅ **CORRECT: Use IDataStores facade**
+```csharp
+public class ProductService
+{
+    private readonly IDataStores _stores;
+    
+    public ProductService(IDataStores stores)
+    {
+        _stores = stores;
+    }
+    
+    public void AddProduct(Product product)
+    {
+        var store = _stores.GetGlobal<Product>();
+        store.Add(product);
+    }
+}
+```
 
 ## Installation
 
@@ -51,6 +129,8 @@ using DataStores.Bootstrap;
 using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
+
+// Registriere DataStores ServiceModule
 var module = new DataStoresServiceModule();
 module.Register(services);
 
@@ -70,6 +150,7 @@ public class ProductStoreRegistrar : IDataStoreRegistrar
 {
     public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
     {
+        // ONLY register stores here, do NOT access them
         registry.RegisterGlobal(new InMemoryDataStore<Product>());
     }
 }
@@ -78,6 +159,7 @@ public class ProductStoreRegistrar : IDataStoreRegistrar
 ### 3. Bootstrap ausführen
 
 ```csharp
+// MUST be called once during startup, after building service provider
 await DataStoreBootstrap.RunAsync(serviceProvider);
 ```
 
@@ -97,6 +179,7 @@ public class ProductService
     
     public IReadOnlyList<Product> GetAllProducts()
     {
+        // Access stores via facade ONLY
         var store = _stores.GetGlobal<Product>();
         return store.Items;
     }
@@ -108,6 +191,49 @@ public class ProductService
     }
 }
 ```
+
+## Application Startup Flow
+
+The DataStores framework follows a strict 5-step initialization sequence:
+
+### Step 1: DI Container Setup
+```csharp
+var services = new ServiceCollection();
+```
+
+### Step 2: Register ServiceModule
+```csharp
+// Registers IDataStores, IGlobalStoreRegistry, ILocalDataStoreFactory
+var module = new DataStoresServiceModule();
+module.Register(services);
+```
+
+### Step 3: Register Store Registrars
+```csharp
+// Register your IDataStoreRegistrar implementations
+services.AddDataStoreRegistrar<ProductStoreRegistrar>();
+services.AddDataStoreRegistrar<CustomerStoreRegistrar>();
+```
+
+### Step 4: Build Service Provider
+```csharp
+var serviceProvider = services.BuildServiceProvider();
+```
+
+### Step 5: Bootstrap Execution
+```csharp
+// MUST be called before first store access
+await DataStoreBootstrap.RunAsync(serviceProvider);
+```
+
+### Step 6: Use via Facade
+```csharp
+// Now access stores via IDataStores ONLY
+var stores = serviceProvider.GetRequiredService<IDataStores>();
+var productStore = stores.GetGlobal<Product>();
+```
+
+**Important:** Do NOT skip step 5 (Bootstrap). Accessing stores before bootstrap will throw exceptions.
 
 ## Kernkonzepte
 

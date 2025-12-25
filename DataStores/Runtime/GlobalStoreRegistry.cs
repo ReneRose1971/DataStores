@@ -6,13 +6,24 @@ using System.Linq;
 namespace DataStores.Runtime;
 
 /// <summary>
-/// Thread-sichere Implementierung von <see cref="IGlobalStoreRegistry"/>.
+/// INTERNAL INFRASTRUCTURE. Do NOT use directly in application code.
+/// Thread-safe implementation of <see cref="IGlobalStoreRegistry"/>.
 /// </summary>
 /// <remarks>
-/// Diese Klasse verwaltet die Registrierung und Auflösung globaler Datenspeicher
-/// in einer thread-sicheren Weise mittels <see cref="ConcurrentDictionary{TKey, TValue}"/>.
-/// Globale Stores sind application-wide Singletons und sollten beim Application-Start
-/// über <see cref="IDataStoreRegistrar"/> Implementierungen registriert werden.
+/// <para>
+/// Application code MUST NOT depend on this type. Use <see cref="IDataStores"/> instead.
+/// </para>
+/// <para>
+/// This class manages global data store registration and resolution in a thread-safe manner
+/// using <see cref="ConcurrentDictionary{TKey, TValue}"/>.
+/// </para>
+/// <para>
+/// Global stores are application-wide singletons and should be registered during startup
+/// via <see cref="IDataStoreRegistrar"/> implementations.
+/// </para>
+/// <para>
+/// Bypassing the facade prevents proper lifecycle management and initialization.
+/// </para>
 /// </remarks>
 public class GlobalStoreRegistry : IGlobalStoreRegistry
 {

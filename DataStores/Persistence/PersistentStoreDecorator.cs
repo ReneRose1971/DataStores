@@ -4,30 +4,36 @@ using DataStores.Runtime;
 namespace DataStores.Persistence;
 
 /// <summary>
-/// Dekoriert einen <see cref="IDataStore{T}"/> mit Persistenz-Funktionalität.
+/// Decorator that adds persistence functionality to <see cref="IDataStore{T}"/>.
 /// </summary>
-/// <typeparam name="T">Der Typ der Elemente im Store. Muss ein Referenztyp sein.</typeparam>
+/// <typeparam name="T">The type of items in the store. Must be a reference type.</typeparam>
 /// <remarks>
 /// <para>
-/// Diese Klasse implementiert das Decorator-Pattern und umhüllt einen <see cref="InMemoryDataStore{T}"/>
-/// mit optionaler Auto-Load- und Auto-Save-Funktionalität. Die eigentliche Persistierungslogik
-/// wird durch eine <see cref="IPersistenceStrategy{T}"/> Implementierung bereitgestellt.
+/// MUST NOT be instantiated directly in application code. Obtain stores via <see cref="IDataStores"/> facade.
 /// </para>
 /// <para>
-/// <b>Auto-Load:</b> Wenn aktiviert, werden Daten beim Aufruf von <see cref="InitializeAsync"/> geladen.
-/// Dies geschieht typischerweise während des Bootstrap-Prozesses.
+/// Direct instantiation is allowed ONLY in:
+/// </para>
+/// <list type="bullet">
+/// <item><description><see cref="IDataStoreRegistrar"/> implementations during registration</description></item>
+/// <item><description>Test scenarios</description></item>
+/// </list>
+/// <para>
+/// This decorator implements the Decorator pattern, wrapping an <see cref="InMemoryDataStore{T}"/>
+/// with optional auto-load and auto-save functionality. Persistence logic is provided by
+/// an <see cref="IPersistenceStrategy{T}"/> implementation.
 /// </para>
 /// <para>
-/// <b>Auto-Save:</b> Wenn aktiviert, werden Daten automatisch bei jeder Änderung (Add, Remove, Clear, etc.)
-/// gespeichert. Das Speichern erfolgt asynchron im Hintergrund und blockiert die Operationen nicht.
+/// <b>Auto-Load:</b> When enabled, data is loaded during <see cref="InitializeAsync"/>,
+/// typically called by <see cref="Bootstrap.DataStoreBootstrap"/>.
 /// </para>
 /// <para>
-/// <b>PropertyChanged-Tracking:</b> Wenn Auto-Save aktiviert ist und Items <see cref="System.ComponentModel.INotifyPropertyChanged"/>
-/// implementieren, werden auch PropertyChanged-Events getrackt und lösen ein Save aus.
+/// <b>Auto-Save:</b> When enabled, data is saved automatically on every change (Add, Remove, Clear, etc.).
+/// Saving occurs asynchronously in the background and does not block operations.
 /// </para>
 /// <para>
-/// <b>Thread-Sicherheit:</b> Verwendet <see cref="SemaphoreSlim"/> zur Vermeidung von Race-Conditions
-/// beim Laden und Speichern.
+/// <b>PropertyChanged Tracking:</b> When auto-save is enabled and items implement <see cref="System.ComponentModel.INotifyPropertyChanged"/>,
+/// property changes are tracked and trigger a save.
 /// </para>
 /// </remarks>
 public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, IDisposable where T : class
@@ -44,43 +50,17 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
     private bool _disposed;
 
     /// <summary>
-    /// Initialisiert eine neue Instanz der <see cref="PersistentStoreDecorator{T}"/> Klasse.
+    /// Initializes a new instance of the <see cref="PersistentStoreDecorator{T}"/> class.
     /// </summary>
-    /// <param name="innerStore">
-    /// Der innere In-Memory-Store, der dekoriert wird. Dieser Store enthält die eigentlichen Daten.
-    /// </param>
-    /// <param name="strategy">
-    /// Die Persistierungsstrategie, die zum Laden und Speichern verwendet wird.
-    /// </param>
-    /// <param name="autoLoad">
-    /// Wenn <c>true</c>, werden Daten während der Initialisierung (<see cref="InitializeAsync"/>) geladen.
-    /// Standard ist <c>true</c>.
-    /// </param>
-    /// <param name="autoSaveOnChange">
-    /// Wenn <c>true</c>, werden Daten automatisch bei Änderungen gespeichert.
-    /// Das Speichern erfolgt asynchron und blockiert nicht.
-    /// Standard ist <c>true</c>.
-    /// </param>
-    /// <exception cref="ArgumentNullException">
-    /// Wird ausgelöst, wenn <paramref name="innerStore"/> oder <paramref name="strategy"/> null ist.
-    /// </exception>
-    /// <example>
-    /// <code>
-    /// var innerStore = new InMemoryDataStore&lt;Product&gt;();
-    /// var strategy = new JsonPersistenceStrategy&lt;Product&gt;("products.json");
-    /// var decorator = new PersistentStoreDecorator&lt;Product&gt;(
-    ///     innerStore, 
-    ///     strategy, 
-    ///     autoLoad: true, 
-    ///     autoSaveOnChange: true);
-    /// 
-    /// // Daten laden
-    /// await decorator.InitializeAsync();
-    /// 
-    /// // Änderungen werden automatisch gespeichert
-    /// decorator.Add(new Product { Id = 1, Name = "Test" });
-    /// </code>
-    /// </example>
+    /// <param name="innerStore">The inner in-memory store to decorate.</param>
+    /// <param name="strategy">The persistence strategy for loading and saving.</param>
+    /// <param name="autoLoad">If <c>true</c>, data is loaded during initialization. Default is <c>true</c>.</param>
+    /// <param name="autoSaveOnChange">If <c>true</c>, data is saved automatically on changes. Default is <c>true</c>.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="innerStore"/> or <paramref name="strategy"/> is null.</exception>
+    /// <remarks>
+    /// This constructor is typically called within <see cref="IDataStoreRegistrar"/> implementations.
+    /// Do NOT call from application feature code.
+    /// </remarks>
     public PersistentStoreDecorator(
         InMemoryDataStore<T> innerStore,
         IPersistenceStrategy<T> strategy,
@@ -92,16 +72,12 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
         _autoLoad = autoLoad;
         _autoSaveOnChange = autoSaveOnChange;
 
-        // Gib der Strategie Zugriff auf die aktuelle Items-Liste
-        // (JSON braucht dies für UpdateSingleAsync, LiteDB ignoriert es)
         _strategy.SetItemsProvider(() => _innerStore.Items);
 
         if (_autoSaveOnChange)
         {
-            // Collection-Changes abonnieren
             _innerStore.Changed += OnInnerStoreChanged;
             
-            // PropertyChanged-Tracking für INotifyPropertyChanged-Entities
             if (typeof(T).IsAssignableTo(typeof(System.ComponentModel.INotifyPropertyChanged)))
             {
                 _propertyChangedBinder = new PropertyChangedBinder<T>(
@@ -114,15 +90,9 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Delegiert an den inneren Store.
-    /// </remarks>
     public IReadOnlyList<T> Items => _innerStore.Items;
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Events werden vom inneren Store weitergeleitet.
-    /// </remarks>
     public event EventHandler<DataStoreChangedEventArgs<T>>? Changed
     {
         add => _innerStore.Changed += value;
@@ -130,52 +100,26 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Delegiert an den inneren Store. Wenn Auto-Save aktiviert ist, wird das Element automatisch gespeichert.
-    /// </remarks>
     public void Add(T item) => _innerStore.Add(item);
 
-    /// <inheritdoc>
-    /// <remarks>
-    /// Delegiert an den inneren Store. Wenn Auto-Save aktiviert ist, werden die Elemente automatisch gespeichert.
-    /// </remarks>
+    /// <inheritdoc/>
     public void AddRange(IEnumerable<T> items) => _innerStore.AddRange(items);
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Delegiert an den inneren Store. Wenn Auto-Save aktiviert ist, wird die Änderung automatisch gespeichert.
-    /// </remarks>
     public bool Remove(T item) => _innerStore.Remove(item);
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Delegiert an den inneren Store. Wenn Auto-Save aktiviert ist, wird die Änderung automatisch gespeichert.
-    /// </remarks>
     public void Clear() => _innerStore.Clear();
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// Delegiert an den inneren Store.
-    /// </remarks>
     public bool Contains(T item) => _innerStore.Contains(item);
 
     /// <inheritdoc/>
     /// <remarks>
-    /// <para>
-    /// Initialisiert den Store asynchron durch Laden der Daten aus der Persistierungsstrategie.
-    /// Diese Methode ist idempotent - mehrfache Aufrufe laden die Daten nur einmal.
-    /// </para>
-    /// <para>
-    /// Die Methode ist thread-sicher und verwendet ein <see cref="SemaphoreSlim"/> 
-    /// zur Vermeidung von Race-Conditions.
-    /// </para>
-    /// <para>
-    /// Wird typischerweise vom <see cref="Bootstrap.DataStoreBootstrap"/> automatisch aufgerufen.
-    /// </para>
+    /// Initializes the store asynchronously by loading data from the persistence strategy.
+    /// This method is idempotent and thread-safe.
+    /// Typically called automatically by <see cref="Bootstrap.DataStoreBootstrap"/>.
     /// </remarks>
-    /// <exception cref="Exception">
-    /// Kann verschiedene Exceptions werfen, abhängig von der verwendeten <see cref="IPersistenceStrategy{T}"/>.
-    /// </exception>
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         await _initSemaphore.WaitAsync(cancellationToken);
@@ -200,23 +144,6 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
         }
     }
 
-    /// <summary>
-    /// Event-Handler für Änderungen am inneren Store.
-    /// Speichert die Daten automatisch, wenn Auto-Save aktiviert ist.
-    /// </summary>
-    /// <param name="sender">Die Quelle des Events.</param>
-    /// <param name="e">Die Event-Daten mit Details zur Änderung.</param>
-    /// <remarks>
-    /// <para>
-    /// Das Speichern erfolgt asynchron im Hintergrund (Fire-and-Forget-Pattern).
-    /// Fehler beim Speichern werden gefangen und ignoriert, um die Anwendung nicht zu blockieren.
-    /// In Produktionsumgebungen sollten Fehler geloggt werden.
-    /// </para>
-    /// <para>
-    /// Verwendet ein <see cref="SemaphoreSlim"/> zur Vermeidung von Race-Conditions
-    /// bei mehreren gleichzeitigen Änderungen.
-    /// </para>
-    /// </remarks>
     private async void OnInnerStoreChanged(object? sender, DataStoreChangedEventArgs<T> e)
     {
         if (_disposed)
@@ -227,10 +154,6 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
         await SaveAsync();
     }
 
-    /// <summary>
-    /// Event-Handler für PropertyChanged-Events einzelner Items.
-    /// </summary>
-    /// <param name="entity">Die Entität, deren Property sich geändert hat.</param>
     private async void OnItemPropertyChanged(T entity)
     {
         if (_disposed)
@@ -252,13 +175,9 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
         }
         catch (Exception)
         {
-            // In Produktionsumgebungen sollte hier geloggt werden
         }
     }
 
-    /// <summary>
-    /// Speichert den aktuellen Zustand des Stores asynchron.
-    /// </summary>
     private async Task SaveAsync()
     {
         try
@@ -275,25 +194,10 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
         }
         catch (Exception)
         {
-            // In Produktionsumgebungen sollte hier geloggt werden
-            // Fehler werden gefangen, um die Anwendung nicht zu blockieren
         }
     }
 
     /// <inheritdoc/>
-    /// <remarks>
-    /// <para>
-    /// Gibt alle verwendeten Ressourcen frei, insbesondere:
-    /// </para>
-    /// <list type="bullet">
-    /// <item><description>Trennt Event-Handler vom inneren Store</description></item>
-    /// <item><description>Beendet PropertyChanged-Tracking</description></item>
-    /// <item><description>Gibt Semaphore frei</description></item>
-    /// </list>
-    /// <para>
-    /// Diese Methode ist idempotent - mehrfache Aufrufe sind sicher.
-    /// </para>
-    /// </remarks>
     public void Dispose()
     {
         if (_disposed)

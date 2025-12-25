@@ -5,38 +5,47 @@ using System.Text.Json;
 namespace DataStores.Persistence;
 
 /// <summary>
-/// Erweiterungsmethoden für die einfache Registrierung von persistenten Stores.
+/// REGISTRATION EXTENSIONS for convenient persistent store setup.
+/// Use ONLY within <see cref="IDataStoreRegistrar.Register"/> implementations during startup.
 /// </summary>
+/// <remarks>
+/// <para>
+/// These extensions simplify persistent store registration by encapsulating the decorator pattern.
+/// </para>
+/// <para>
+/// Do NOT use in application feature code. Use <see cref="IDataStores"/> facade to access stores after registration.
+/// </para>
+/// </remarks>
 public static class PersistenceRegistrationExtensions
 {
     /// <summary>
-    /// Registriert einen globalen DataStore mit JSON-Datei-Persistierung.
+    /// Registers a global DataStore with JSON file persistence.
     /// </summary>
-    /// <typeparam name="T">Der Typ der Elemente im Store.</typeparam>
-    /// <param name="registry">Die GlobalStoreRegistry-Instanz.</param>
-    /// <param name="jsonFilePath">Der vollständige Pfad zur JSON-Datei.</param>
-    /// <param name="jsonOptions">Optionale JSON-Serialisierungsoptionen.</param>
-    /// <param name="autoLoad">Wenn true, werden Daten beim Bootstrap automatisch geladen.</param>
-    /// <param name="autoSave">Wenn true, werden Änderungen automatisch gespeichert.</param>
-    /// <param name="comparer">Optionaler Equality-Comparer für Elemente.</param>
-    /// <param name="synchronizationContext">Optionaler SynchronizationContext für Events.</param>
-    /// <returns>Die Registry-Instanz für Fluent-API.</returns>
-    /// <exception cref="ArgumentNullException">Wird ausgelöst, wenn registry oder jsonFilePath null ist.</exception>
-    /// <exception cref="GlobalStoreAlreadyRegisteredException">Wird ausgelöst, wenn bereits ein Store für Typ T registriert wurde.</exception>
+    /// <typeparam name="T">The type of items in the store.</typeparam>
+    /// <param name="registry">The GlobalStoreRegistry instance.</param>
+    /// <param name="jsonFilePath">The full path to the JSON file.</param>
+    /// <param name="jsonOptions">Optional JSON serialization options.</param>
+    /// <param name="autoLoad">If true, data is loaded automatically during bootstrap.</param>
+    /// <param name="autoSave">If true, changes are saved automatically.</param>
+    /// <param name="comparer">Optional equality comparer for items.</param>
+    /// <param name="synchronizationContext">Optional SynchronizationContext for events.</param>
+    /// <returns>The registry instance for fluent API.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when registry or jsonFilePath is null.</exception>
+    /// <exception cref="GlobalStoreAlreadyRegisteredException">Thrown when a store for type T is already registered.</exception>
     /// <remarks>
-    /// <para>
-    /// Diese Methode erstellt einen InMemoryDataStore, dekoriert ihn mit Persistierung
-    /// und registriert ihn als globalen Store.
-    /// </para>
+    /// Use ONLY within <see cref="IDataStoreRegistrar.Register"/> implementations.
+    /// </remarks>
     /// <example>
     /// <code>
-    /// registry.RegisterGlobalWithJsonFile&lt;Customer&gt;(
-    ///     "C:\\Data\\customers.json",
-    ///     autoLoad: true,
-    ///     autoSave: true);
+    /// public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
+    /// {
+    ///     registry.RegisterGlobalWithJsonFile&lt;Customer&gt;(
+    ///         "C:\\Data\\customers.json",
+    ///         autoLoad: true,
+    ///         autoSave: true);
+    /// }
     /// </code>
     /// </example>
-    /// </remarks>
     public static IGlobalStoreRegistry RegisterGlobalWithJsonFile<T>(
         this IGlobalStoreRegistry registry,
         string jsonFilePath,
@@ -64,41 +73,34 @@ public static class PersistenceRegistrationExtensions
     }
 
     /// <summary>
-    /// Registriert einen globalen DataStore mit LiteDB-Persistierung.
+    /// Registers a global DataStore with LiteDB persistence.
     /// </summary>
-    /// <typeparam name="T">Der Typ der Elemente im Store. Muss von <see cref="EntityBase"/> erben.</typeparam>
-    /// <param name="registry">Die GlobalStoreRegistry-Instanz.</param>
-    /// <param name="databasePath">Der vollständige Pfad zur LiteDB-Datenbankdatei.</param>
-    /// <param name="collectionName">
-    /// Der Name der Collection in der Datenbank. 
-    /// Wenn null, wird der Typname verwendet.
-    /// </param>
-    /// <param name="autoLoad">Wenn true, werden Daten beim Bootstrap automatisch geladen.</param>
-    /// <param name="autoSave">Wenn true, werden Änderungen automatisch gespeichert.</param>
-    /// <param name="comparer">Optionaler Equality-Comparer für Elemente.</param>
-    /// <param name="synchronizationContext">Optionaler SynchronizationContext für Events.</param>
-    /// <returns>Die Registry-Instanz für Fluent-API.</returns>
-    /// <exception cref="ArgumentNullException">Wird ausgelöst, wenn registry oder databasePath null ist.</exception>
-    /// <exception cref="GlobalStoreAlreadyRegisteredException">Wird ausgelöst, wenn bereits ein Store für Typ T registriert wurde.</exception>
+    /// <typeparam name="T">The type of items in the store. Must inherit from <see cref="EntityBase"/>.</typeparam>
+    /// <param name="registry">The GlobalStoreRegistry instance.</param>
+    /// <param name="databasePath">The full path to the LiteDB database file.</param>
+    /// <param name="collectionName">The collection name in the database. If null, uses the type name.</param>
+    /// <param name="autoLoad">If true, data is loaded automatically during bootstrap.</param>
+    /// <param name="autoSave">If true, changes are saved automatically.</param>
+    /// <param name="comparer">Optional equality comparer for items.</param>
+    /// <param name="synchronizationContext">Optional SynchronizationContext for events.</param>
+    /// <returns>The registry instance for fluent API.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when registry or databasePath is null.</exception>
+    /// <exception cref="GlobalStoreAlreadyRegisteredException">Thrown when a store for type T is already registered.</exception>
     /// <remarks>
-    /// <para>
-    /// Diese Methode erstellt einen InMemoryDataStore, dekoriert ihn mit LiteDB-Persistierung
-    /// und registriert ihn als globalen Store.
-    /// </para>
-    /// <para>
-    /// <b>Hinweis:</b> Die aktuelle Implementierung verwendet ein Mock-System.
-    /// Für Produktionsumgebungen sollte das LiteDB NuGet-Paket installiert werden.
-    /// </para>
+    /// Use ONLY within <see cref="IDataStoreRegistrar.Register"/> implementations.
+    /// </remarks>
     /// <example>
     /// <code>
-    /// registry.RegisterGlobalWithLiteDb&lt;Customer&gt;(
-    ///     "C:\\Data\\myapp.db",
-    ///     collectionName: "customers",
-    ///     autoLoad: true,
-    ///     autoSave: true);
+    /// public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
+    /// {
+    ///     registry.RegisterGlobalWithLiteDb&lt;Customer&gt;(
+    ///         "C:\\Data\\myapp.db",
+    ///         collectionName: "customers",
+    ///         autoLoad: true,
+    ///         autoSave: true);
+    /// }
     /// </code>
     /// </example>
-    /// </remarks>
     public static IGlobalStoreRegistry RegisterGlobalWithLiteDb<T>(
         this IGlobalStoreRegistry registry,
         string databasePath,
@@ -126,33 +128,34 @@ public static class PersistenceRegistrationExtensions
     }
 
     /// <summary>
-    /// Registriert einen globalen DataStore mit benutzerdefinierter Persistierungs-Strategie.
+    /// Registers a global DataStore with custom persistence strategy.
     /// </summary>
-    /// <typeparam name="T">Der Typ der Elemente im Store.</typeparam>
-    /// <param name="registry">Die GlobalStoreRegistry-Instanz.</param>
-    /// <param name="strategy">Die zu verwendende Persistierungs-Strategie.</param>
-    /// <param name="autoLoad">Wenn true, werden Daten beim Bootstrap automatisch geladen.</param>
-    /// <param name="autoSave">Wenn true, werden Änderungen automatisch gespeichert.</param>
-    /// <param name="comparer">Optionaler Equality-Comparer für Elemente.</param>
-    /// <param name="synchronizationContext">Optionaler SynchronizationContext für Events.</param>
-    /// <returns>Die Registry-Instanz für Fluent-API.</returns>
-    /// <exception cref="ArgumentNullException">Wird ausgelöst, wenn registry oder strategy null ist.</exception>
-    /// <exception cref="GlobalStoreAlreadyRegisteredException">Wird ausgelöst, wenn bereits ein Store für Typ T registriert wurde.</exception>
+    /// <typeparam name="T">The type of items in the store.</typeparam>
+    /// <param name="registry">The GlobalStoreRegistry instance.</param>
+    /// <param name="strategy">The persistence strategy to use.</param>
+    /// <param name="autoLoad">If true, data is loaded automatically during bootstrap.</param>
+    /// <param name="autoSave">If true, changes are saved automatically.</param>
+    /// <param name="comparer">Optional equality comparer for items.</param>
+    /// <param name="synchronizationContext">Optional SynchronizationContext for events.</param>
+    /// <returns>The registry instance for fluent API.</returns>
+    /// <exception cref="ArgumentNullException">Thrown when registry or strategy is null.</exception>
+    /// <exception cref="GlobalStoreAlreadyRegisteredException">Thrown when a store for type T is already registered.</exception>
     /// <remarks>
-    /// <para>
-    /// Diese Methode erlaubt die Verwendung einer benutzerdefinierten Persistierungs-Strategie.
-    /// Nützlich für Cloud-Storage, Datenbanken oder andere Persistierungs-Mechanismen.
-    /// </para>
+    /// Use ONLY within <see cref="IDataStoreRegistrar.Register"/> implementations.
+    /// Allows custom persistence strategies for cloud storage, databases, or other mechanisms.
+    /// </remarks>
     /// <example>
     /// <code>
-    /// var customStrategy = new MyCustomPersistenceStrategy&lt;Customer&gt;();
-    /// registry.RegisterGlobalWithPersistence(
-    ///     customStrategy,
-    ///     autoLoad: true,
-    ///     autoSave: true);
+    /// public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
+    /// {
+    ///     var customStrategy = new MyCustomPersistenceStrategy&lt;Customer&gt;();
+    ///     registry.RegisterGlobalWithPersistence(
+    ///         customStrategy,
+    ///         autoLoad: true,
+    ///         autoSave: true);
+    /// }
     /// </code>
     /// </example>
-    /// </remarks>
     public static IGlobalStoreRegistry RegisterGlobalWithPersistence<T>(
         this IGlobalStoreRegistry registry,
         IPersistenceStrategy<T> strategy,
