@@ -35,6 +35,7 @@
 
   <ItemGroup>
     <Folder Include="Builders\" />
+    <Folder Include="Fakes\" />
     <Folder Include="Relations\" />
   </ItemGroup>
 

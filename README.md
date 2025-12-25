@@ -4,10 +4,10 @@ Eine leistungsstarke .NET 8 Bibliothek für die Verwaltung von In-Memory-Datensp
 
 ## Übersicht
 
-Diese Solution besteht aus zwei Hauptprojekten:
+Diese Solution stellt die **DataStores**-Bibliothek bereit - eine flexible und erweiterbare Lösung zum Verwalten von typsicheren Datensammlungen im Speicher.
 
-### 1. **DataStores** - Kernbibliothek
-Eine flexible und erweiterbare Bibliothek zum Verwalten von typsicheren Datensammlungen im Speicher. Die Bibliothek bietet:
+### Hauptfunktionen
+
 - Thread-sichere In-Memory-Datenspeicher
 - Globale und lokale Datenspeicher-Konzepte
 - Optionale Persistierung mit asynchronen Strategien
@@ -15,30 +15,20 @@ Eine flexible und erweiterbare Bibliothek zum Verwalten von typsicheren Datensam
 - Dependency Injection Integration
 - Event-basierte Änderungsbenachrichtigungen
 
-[Zur DataStores Dokumentation](DataStores/README.md)
-
-### 2. **DataStores.Tests** - Unit Tests
-Umfassende Testsuite mit über 100 Tests zur Sicherstellung der Qualität und Zuverlässigkeit:
-- Unit Tests für alle Kernkomponenten
-- Nebenläufigkeits- und Thread-Sicherheitstests
-- Performance- und Stress-Tests
-- Integrationstests für End-to-End-Szenarien
-- Edge-Case- und Fehlerbehandlungstests
-
-[Zur DataStores.Tests Projekt README](DataStores.Tests/README.md)
+[Zur vollständigen DataStores Dokumentation](DataStores/README.md)
 
 ## Schnellstart
 
 ### Installation
 
 ```bash
-# Klonen Sie das Repository
+# Repository klonen
 git clone https://github.com/ReneRose1971/DataStores.git
 
-# Wechseln Sie in das Verzeichnis
+# In das Verzeichnis wechseln
 cd DataStores
 
-# Erstellen Sie die Solution
+# Solution erstellen
 dotnet build
 ```
 
@@ -48,18 +38,11 @@ dotnet build
 using DataStores.Abstractions;
 using DataStores.Bootstrap;
 using Microsoft.Extensions.DependencyInjection;
-using Common.Bootstrap;
 
-// 1. Dependency Injection einrichten mit ServiceModule-Pattern
+// 1. Dependency Injection einrichten
 var services = new ServiceCollection();
-
-// Automatische Registrierung via AddModulesFromAssemblies
-services.AddModulesFromAssemblies(
-    typeof(DataStoresServiceModule).Assembly);
-
-// Oder manuell:
-// var module = new DataStoresServiceModule();
-// module.Register(services);
+var module = new DataStoresServiceModule();
+module.Register(services);
 
 // 2. Registrar hinzufügen
 services.AddDataStoreRegistrar<MyDataStoreRegistrar>();
@@ -126,14 +109,6 @@ DataStores/
 │   ├── Docs/                      # Ausführliche Dokumentation
 │   └── README.md                  # Projekt-Dokumentation
 │
-├── DataStores.Tests/              # Test-Projekt
-│   ├── Runtime/                   # Runtime-Tests
-│   ├── Persistence/               # Persistierung-Tests
-│   ├── Relations/                 # Beziehungs-Tests
-│   ├── Integration/               # End-to-End-Tests
-│   ├── Performance/               # Performance-Tests
-│   └── README.md                  # Test-Dokumentation
-│
 └── README.md                      # Diese Datei
 ```
 
@@ -167,8 +142,9 @@ DataStores/
 
 - **.NET 8** - Target Framework
 - **C# 12** - Programmiersprache
-- **xUnit** - Test-Framework
 - **Microsoft.Extensions.DependencyInjection** - Dependency Injection
+- **LiteDB** - Optionale LiteDB-Persistierung
+- **System.Text.Json** - Optionale JSON-Persistierung
 
 ## Weitere Dokumentation
 
@@ -178,8 +154,23 @@ DataStores/
   - [Verwendungsbeispiele](DataStores/Docs/Usage-Examples.md)
   - [Persistierung Guide](DataStores/Docs/Persistence-Guide.md)
   - [Beziehungen Guide](DataStores/Docs/Relations-Guide.md)
+  - [LiteDB Integration](DataStores/Docs/LiteDB-Integration.md)
+  - [Registrar Best Practices](DataStores/Docs/Registrar-Best-Practices.md)
 
-- [DataStores.Tests Projekt README](DataStores.Tests/README.md)
+## Tests
+
+Die Solution verfügt über eine umfassende Testsuite mit über 370 Tests, die alle Aspekte der Bibliothek abdecken:
+
+```bash
+# Alle Tests ausführen
+dotnet test
+
+# Nur Integration-Tests
+dotnet test --filter "Category=Integration"
+
+# Mit Code Coverage
+dotnet test /p:CollectCoverage=true
+```
 
 ## Beitragen
 
@@ -189,13 +180,15 @@ Beiträge sind willkommen! Bitte stellen Sie sicher, dass:
 3. Code den bestehenden Stil folgt
 4. Deutsche Dokumentation hinzugefügt wird
 
+Weitere Informationen finden Sie in [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Lizenz
 
-[Ihre Lizenz hier einfügen]
+MIT License - siehe [LICENSE](LICENSE) Datei für Details.
 
 ## Autor
 
-[Ihre Informationen hier einfügen]
+René Rose
 
 ---
 

@@ -1,4 +1,6 @@
 using DataStores.Runtime;
+using TestHelper.DataStores.Comparers;
+using TestHelper.DataStores.Models;
 using Xunit;
 
 namespace DataStores.Tests.Runtime;
@@ -12,10 +14,10 @@ public class InMemoryDataStore_ComparerTests
     public void Constructor_WithNullComparer_Should_UseDefault()
     {
         // Arrange & Act
-        var store = new InMemoryDataStore<TestItem>(comparer: null);
+        var store = new InMemoryDataStore<TestDto>(comparer: null);
         
-        var item1 = new TestItem { Id = 1, Name = "A" };
-        var item2 = new TestItem { Id = 1, Name = "A" };
+        var item1 = new TestDto("A", 25);
+        var item2 = new TestDto("A", 25);
         
         store.Add(item1);
         
@@ -27,13 +29,15 @@ public class InMemoryDataStore_ComparerTests
     public void Remove_Should_UseCustomComparer()
     {
         // Arrange
-        var comparer = new IdOnlyComparer();
-        var store = new InMemoryDataStore<TestItem>(comparer);
+        var comparer = new KeySelectorEqualityComparer<TestDto, Guid>(x => x.Id);
+        var store = new InMemoryDataStore<TestDto>(comparer);
         
-        store.Add(new TestItem { Id = 1, Name = "Original" });
+        var item = new TestDto("Original", 25);
+        store.Add(item);
         
         // Act - Remove with different Name but same Id
-        var removed = store.Remove(new TestItem { Id = 1, Name = "Different" });
+        var itemToRemove = new TestDto("Different", 30) { Id = item.Id };
+        var removed = store.Remove(itemToRemove);
         
         // Assert - Should find by Id only
         Assert.True(removed);
@@ -44,13 +48,13 @@ public class InMemoryDataStore_ComparerTests
     public void Contains_Should_UseCustomComparer()
     {
         // Arrange
-        var comparer = new NameOnlyComparer();
-        var store = new InMemoryDataStore<TestItem>(comparer);
+        var comparer = new KeySelectorEqualityComparer<TestDto, string>(x => x.Name);
+        var store = new InMemoryDataStore<TestDto>(comparer);
         
-        store.Add(new TestItem { Id = 1, Name = "Test" });
+        store.Add(new TestDto("Test", 25));
         
-        // Act - Contains with different Id but same Name
-        var contains = store.Contains(new TestItem { Id = 999, Name = "Test" });
+        // Act - Contains with different Age but same Name
+        var contains = store.Contains(new TestDto("Test", 99));
         
         // Assert
         Assert.True(contains);
@@ -60,12 +64,14 @@ public class InMemoryDataStore_ComparerTests
     public void Add_WithDuplicatesByComparer_Should_AddBoth()
     {
         // Arrange
-        var comparer = new IdOnlyComparer();
-        var store = new InMemoryDataStore<TestItem>(comparer);
+        var comparer = new KeySelectorEqualityComparer<TestDto, Guid>(x => x.Id);
+        var store = new InMemoryDataStore<TestDto>(comparer);
         
-        // Act - Both have Id=1 according to comparer
-        store.Add(new TestItem { Id = 1, Name = "A" });
-        store.Add(new TestItem { Id = 1, Name = "B" }); // Comparer sees as duplicate
+        var sharedId = Guid.NewGuid();
+        
+        // Act - Both have same Id according to comparer
+        store.Add(new TestDto("A", 20) { Id = sharedId });
+        store.Add(new TestDto("B", 30) { Id = sharedId }); // Comparer sees as duplicate
         
         // Assert - InMemoryDataStore adds both (doesn't enforce uniqueness)
         Assert.Equal(2, store.Items.Count);
@@ -75,15 +81,15 @@ public class InMemoryDataStore_ComparerTests
     public void Remove_Should_RemoveFirstMatchByComparer()
     {
         // Arrange
-        var comparer = new IdOnlyComparer();
-        var store = new InMemoryDataStore<TestItem>(comparer);
+        var comparer = new KeySelectorEqualityComparer<TestDto, string>(x => x.Name);
+        var store = new InMemoryDataStore<TestDto>(comparer);
         
-        store.Add(new TestItem { Id = 1, Name = "A" });
-        store.Add(new TestItem { Id = 1, Name = "B" });
-        store.Add(new TestItem { Id = 1, Name = "C" });
+        store.Add(new TestDto("Test", 20));
+        store.Add(new TestDto("Test", 30));
+        store.Add(new TestDto("Test", 40));
         
-        // Act - Remove by Id=1
-        var removed = store.Remove(new TestItem { Id = 1, Name = "Anything" });
+        // Act - Remove by Name="Test"
+        var removed = store.Remove(new TestDto("Test", 99));
         
         // Assert - Only first match removed
         Assert.True(removed);
@@ -95,12 +101,12 @@ public class InMemoryDataStore_ComparerTests
     {
         // Arrange - Comparer with bad GetHashCode (always returns 0)
         var comparer = new BadHashCodeComparer();
-        var store = new InMemoryDataStore<TestItem>(comparer);
+        var store = new InMemoryDataStore<TestDto>(comparer);
         
         // Act - Add multiple items
-        store.Add(new TestItem { Id = 1, Name = "A" });
-        store.Add(new TestItem { Id = 2, Name = "B" });
-        store.Add(new TestItem { Id = 3, Name = "C" });
+        store.Add(new TestDto("A", 20));
+        store.Add(new TestDto("B", 30));
+        store.Add(new TestDto("C", 40));
         
         // Assert - Should still work (uses List<T>, not HashSet)
         Assert.Equal(3, store.Items.Count);
@@ -111,12 +117,12 @@ public class InMemoryDataStore_ComparerTests
     {
         // Arrange - Using notnull attribute to satisfy constraint
         var comparer = new NullSafeComparer();
-#pragma warning disable CS8634 // The type cannot be used as type parameter in the generic type or method. Nullability of type argument doesn't match 'class' constraint.
-        var store = new InMemoryDataStore<TestItem?>(comparer);
+#pragma warning disable CS8634
+        var store = new InMemoryDataStore<TestDto?>(comparer);
 #pragma warning restore CS8634
         
         store.Add(null);
-        store.Add(new TestItem { Id = 1, Name = "A" });
+        store.Add(new TestDto("A", 20));
         
         // Act
         var containsNull = store.Contains(null);
@@ -133,16 +139,16 @@ public class InMemoryDataStore_ComparerTests
     {
         // Arrange
         var comparer = new ThrowingComparer();
-        var store = new InMemoryDataStore<TestItem>(comparer);
+        var store = new InMemoryDataStore<TestDto>(comparer);
         
-        store.Add(new TestItem { Id = 1, Name = "A" });
+        store.Add(new TestDto("A", 20));
         
         // Act & Assert - Comparer throws during Contains/Remove
         Assert.Throws<InvalidOperationException>(() => 
-            store.Contains(new TestItem { Id = 1 }));
+            store.Contains(new TestDto("A", 20)));
         
         Assert.Throws<InvalidOperationException>(() => 
-            store.Remove(new TestItem { Id = 1 }));
+            store.Remove(new TestDto("A", 20)));
     }
 
     [Fact]
@@ -150,13 +156,13 @@ public class InMemoryDataStore_ComparerTests
     {
         // Arrange
         var comparer = new CaseInsensitiveNameComparer();
-        var store = new InMemoryDataStore<TestItem>(comparer);
+        var store = new InMemoryDataStore<TestDto>(comparer);
         
-        store.Add(new TestItem { Id = 1, Name = "Test" });
+        store.Add(new TestDto("Test", 25));
         
         // Act
-        var containsLower = store.Contains(new TestItem { Id = 99, Name = "test" });
-        var containsUpper = store.Contains(new TestItem { Id = 99, Name = "TEST" });
+        var containsLower = store.Contains(new TestDto("test", 99));
+        var containsUpper = store.Contains(new TestDto("TEST", 99));
         
         // Assert
         Assert.True(containsLower);
@@ -167,88 +173,58 @@ public class InMemoryDataStore_ComparerTests
     public void Comparer_Should_BeConsistentAcrossOperations()
     {
         // Arrange
-        var comparer = new IdOnlyComparer();
-        var store = new InMemoryDataStore<TestItem>(comparer);
+        var comparer = new KeySelectorEqualityComparer<TestDto, Guid>(x => x.Id);
+        var store = new InMemoryDataStore<TestDto>(comparer);
         
-        var item = new TestItem { Id = 1, Name = "Original" };
+        var item = new TestDto("Original", 25);
         store.Add(item);
         
         // Act & Assert - All operations use same comparer
-        Assert.True(store.Contains(new TestItem { Id = 1, Name = "Different1" }));
-        Assert.True(store.Remove(new TestItem { Id = 1, Name = "Different2" }));
+        Assert.True(store.Contains(new TestDto("Different1", 30) { Id = item.Id }));
+        Assert.True(store.Remove(new TestDto("Different2", 40) { Id = item.Id }));
         
-        store.Add(new TestItem { Id = 2, Name = "A" });
-        Assert.False(store.Contains(new TestItem { Id = 1, Name = "Anything" }));
+        store.Add(new TestDto("A", 20));
+        Assert.False(store.Contains(new TestDto("Anything", 50) { Id = item.Id }));
     }
 
-    // Helper Classes
+    // Edge-Case Comparers (bleiben lokal - testen spezifische Comparer-Verhaltensweisen)
 
-    private class TestItem
+    private class BadHashCodeComparer : IEqualityComparer<TestDto>
     {
-        public int Id { get; set; }
-        public string Name { get; set; } = "";
+        public bool Equals(TestDto? x, TestDto? y) => x?.Id == y?.Id;
+        public int GetHashCode(TestDto obj) => 0; // Bad hash!
     }
 
-    private class IdOnlyComparer : IEqualityComparer<TestItem>
+    private class NullSafeComparer : IEqualityComparer<TestDto?>
     {
-        public bool Equals(TestItem? x, TestItem? y)
+        public bool Equals(TestDto? x, TestDto? y)
         {
             if (x == null && y == null) return true;
             if (x == null || y == null) return false;
             return x.Id == y.Id;
         }
 
-        public int GetHashCode(TestItem obj) => obj.Id.GetHashCode();
+        public int GetHashCode(TestDto? obj) => obj?.Id.GetHashCode() ?? 0;
     }
 
-    private class NameOnlyComparer : IEqualityComparer<TestItem>
+    private class ThrowingComparer : IEqualityComparer<TestDto>
     {
-        public bool Equals(TestItem? x, TestItem? y)
-        {
-            if (x == null && y == null) return true;
-            if (x == null || y == null) return false;
-            return string.Equals(x.Name, y.Name, StringComparison.Ordinal);
-        }
-
-        public int GetHashCode(TestItem obj) => obj.Name?.GetHashCode() ?? 0;
-    }
-
-    private class BadHashCodeComparer : IEqualityComparer<TestItem>
-    {
-        public bool Equals(TestItem? x, TestItem? y) => x?.Id == y?.Id;
-        public int GetHashCode(TestItem obj) => 0; // Bad hash!
-    }
-
-    private class NullSafeComparer : IEqualityComparer<TestItem?>
-    {
-        public bool Equals(TestItem? x, TestItem? y)
-        {
-            if (x == null && y == null) return true;
-            if (x == null || y == null) return false;
-            return x.Id == y.Id;
-        }
-
-        public int GetHashCode(TestItem? obj) => obj?.Id.GetHashCode() ?? 0;
-    }
-
-    private class ThrowingComparer : IEqualityComparer<TestItem>
-    {
-        public bool Equals(TestItem? x, TestItem? y) => 
+        public bool Equals(TestDto? x, TestDto? y) => 
             throw new InvalidOperationException("Comparer error");
         
-        public int GetHashCode(TestItem obj) => obj.Id.GetHashCode();
+        public int GetHashCode(TestDto obj) => obj.Id.GetHashCode();
     }
 
-    private class CaseInsensitiveNameComparer : IEqualityComparer<TestItem>
+    private class CaseInsensitiveNameComparer : IEqualityComparer<TestDto>
     {
-        public bool Equals(TestItem? x, TestItem? y)
+        public bool Equals(TestDto? x, TestDto? y)
         {
             if (x == null && y == null) return true;
             if (x == null || y == null) return false;
             return string.Equals(x.Name, y.Name, StringComparison.OrdinalIgnoreCase);
         }
 
-        public int GetHashCode(TestItem obj) => 
+        public int GetHashCode(TestDto obj) => 
             obj.Name?.ToLowerInvariant().GetHashCode() ?? 0;
     }
 }

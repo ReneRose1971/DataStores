@@ -56,12 +56,58 @@ public sealed class TestEntity : EntityBase
     public int Age { get; set; }
 
     /// <summary>
+    /// Status (für Order/Invoice-Szenarien).
+    /// </summary>
+    public TestEntityStatus Status { get; set; }
+
+    /// <summary>
+    /// Kunden-ID (für Order/Invoice-Szenarien).
+    /// </summary>
+    public int CustomerId { get; set; }
+
+    /// <summary>
+    /// Betrag/Amount (für Order/Invoice-Szenarien).
+    /// </summary>
+    public decimal Amount { get; set; }
+
+    /// <summary>
+    /// Bezahlt-Flag (für Invoice-Szenarien).
+    /// </summary>
+    public bool IsPaid { get; set; }
+
+    /// <summary>
+    /// Bestellnummer/Rechnungsnummer (für Order/Invoice-Szenarien).
+    /// </summary>
+    public string OrderNumber { get; set; } = "";
+
+    /// <summary>
+    /// Bestelldatum (für Order-Szenarien).
+    /// </summary>
+    public DateTime OrderDate { get; set; }
+
+    /// <summary>
+    /// Verweis auf Parent-Order (für Invoice-Szenarien).
+    /// </summary>
+    public int OrderId { get; set; }
+
+    /// <summary>
+    /// Items-Liste (für Order-Szenarien).
+    /// </summary>
+    public List<string> Items { get; set; } = new();
+
+    /// <summary>
+    /// Kundenname (für Order-Szenarien).
+    /// </summary>
+    public string CustomerName { get; set; } = "";
+
+    /// <summary>
     /// Parameterloser Konstruktor (für Serialisierung und LiteDB).
     /// </summary>
     public TestEntity()
     {
         Id = 0; // Neue Entity
         UpdatedUtc = DateTime.UtcNow;
+        OrderDate = DateTime.UtcNow;
     }
 
     /// <summary>
@@ -76,7 +122,7 @@ public sealed class TestEntity : EntityBase
     }
 
     public override string ToString() =>
-        $"TestEntity[{Id}]: {Name}, Version={Version}, Age={Age}, Ratio={Ratio:F2}, Deleted={IsDeleted}";
+        $"TestEntity[{Id}]: {Name}, Version={Version}, Age={Age}, Ratio={Ratio:F2}, Status={Status}, Deleted={IsDeleted}";
 
     public override bool Equals(object? obj)
     {
