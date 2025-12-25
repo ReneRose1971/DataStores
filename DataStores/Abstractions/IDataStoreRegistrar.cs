@@ -12,8 +12,35 @@ namespace DataStores.Abstractions;
 /// <para>
 /// After registration, use <see cref="IDataStores"/> facade to access stores.
 /// </para>
+/// <para>
+/// <b>Recommended Implementation:</b>
+/// </para>
+/// <para>
+/// Instead of implementing this interface directly, inherit from <see cref="Registration.DataStoreRegistrarBase"/>
+/// which provides a builder-based API that eliminates boilerplate code.
+/// </para>
 /// </remarks>
 /// <example>
+/// <para><b>RECOMMENDED: Using DataStoreRegistrarBase with builders</b></para>
+/// <code>
+/// public class MyAppStoreRegistrar : DataStoreRegistrarBase
+/// {
+///     public MyAppStoreRegistrar(string dbPath)
+///     {
+///         // InMemory store
+///         AddStore(new InMemoryDataStoreBuilder&lt;Product&gt;());
+///         
+///         // JSON store
+///         AddStore(new JsonDataStoreBuilder&lt;Customer&gt;(
+///             filePath: "C:\\Data\\customers.json"));
+///         
+///         // LiteDB store (collection name auto-generated)
+///         AddStore(new LiteDbDataStoreBuilder&lt;Order&gt;(
+///             databasePath: dbPath));
+///     }
+/// }
+/// </code>
+/// <para><b>ALTERNATIVE: Direct implementation (more boilerplate)</b></para>
 /// <code>
 /// public class ProductStoreRegistrar : IDataStoreRegistrar
 /// {

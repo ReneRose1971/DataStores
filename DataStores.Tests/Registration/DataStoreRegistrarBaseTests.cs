@@ -1,0 +1,84 @@
+using DataStores.Abstractions;
+using DataStores.Bootstrap;
+using DataStores.Registration;
+using DataStores.Runtime;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace DataStores.Tests.Registration;
+
+[Trait("Category", "Unit")]
+public class DataStoreRegistrarBaseTests
+{
+    private class TestEntity
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private class SimpleRegistrar : DataStoreRegistrarBase
+    {
+        public SimpleRegistrar()
+        {
+            AddStore(new InMemoryDataStoreBuilder<TestEntity>());
+        }
+    }
+
+    [Fact]
+    public void Register_Should_RegisterAllAddedStores()
+    {
+        var registrar = new SimpleRegistrar();
+        var registry = new GlobalStoreRegistry();
+
+        registrar.Register(registry, null!);
+
+        var store = registry.ResolveGlobal<TestEntity>();
+        Assert.NotNull(store);
+    }
+
+    [Fact]
+    public void Register_Should_RegisterStoresInOrder()
+    {
+        var registrar = new MultiStoreRegistrar();
+        var registry = new GlobalStoreRegistry();
+
+        registrar.Register(registry, null!);
+
+        Assert.NotNull(registry.ResolveGlobal<Product>());
+        Assert.NotNull(registry.ResolveGlobal<Customer>());
+    }
+
+    private class Product
+    {
+        public int Id { get; set; }
+    }
+
+    private class Customer
+    {
+        public int Id { get; set; }
+    }
+
+    private class MultiStoreRegistrar : DataStoreRegistrarBase
+    {
+        public MultiStoreRegistrar()
+        {
+            AddStore(new InMemoryDataStoreBuilder<Product>());
+            AddStore(new InMemoryDataStoreBuilder<Customer>());
+        }
+    }
+
+    [Fact]
+    public void Register_Should_WorkWithDependencyInjection()
+    {
+        var services = new ServiceCollection();
+        var module = new DataStoresServiceModule();
+        module.Register(services);
+        services.AddDataStoreRegistrar<SimpleRegistrar>();
+
+        var provider = services.BuildServiceProvider();
+        DataStoreBootstrap.Run(provider);
+
+        var stores = provider.GetRequiredService<IDataStores>();
+        var store = stores.GetGlobal<TestEntity>();
+        Assert.NotNull(store);
+    }
+}

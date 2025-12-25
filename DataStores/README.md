@@ -135,13 +135,35 @@ var module = new DataStoresServiceModule();
 module.Register(services);
 
 // Eigenen Registrar hinzufügen
-services.AddDataStoreRegistrar<ProductStoreRegistrar>();
+services.AddDataStoreRegistrar(new MyAppStoreRegistrar("C:\\Data\\myapp.db"));
 
 var serviceProvider = services.BuildServiceProvider();
 ```
 
-### 2. Registrar implementieren
+### 2. Registrar implementieren (EMPFOHLEN: Builder Pattern)
 
+```csharp
+using DataStores.Registration;
+
+public class MyAppStoreRegistrar : DataStoreRegistrarBase
+{
+    public MyAppStoreRegistrar(string dbPath)
+    {
+        // InMemory store (no persistence)
+        AddStore(new InMemoryDataStoreBuilder<Product>());
+        
+        // JSON store with auto-load and auto-save
+        AddStore(new JsonDataStoreBuilder<Customer>(
+            filePath: "C:\\Data\\customers.json"));
+        
+        // LiteDB store (collection name auto-generated from type name)
+        AddStore(new LiteDbDataStoreBuilder<Order>(
+            databasePath: dbPath));
+    }
+}
+```
+
+**Alternative (mehr Boilerplate):**
 ```csharp
 using DataStores.Abstractions;
 using DataStores.Runtime;
@@ -337,7 +359,7 @@ store.Changed += (sender, e) =>
 
 ## Beispiele
 
-### Beispiel 1: Einfacher Product Store
+### Beispiel 1: Einfacher Product Store mit Builder Pattern
 
 ```csharp
 public class Product
@@ -348,6 +370,16 @@ public class Product
     public bool IsActive { get; set; }
 }
 
+// Registrar mit Builder Pattern
+public class ProductStoreRegistrar : DataStoreRegistrarBase
+{
+    public ProductStoreRegistrar()
+    {
+        AddStore(new InMemoryDataStoreBuilder<Product>());
+    }
+}
+
+// Verwendung
 var stores = serviceProvider.GetRequiredService<IDataStores>();
 var productStore = stores.GetGlobal<Product>();
 
@@ -366,8 +398,26 @@ productStore.AddRange(new[]
 });
 ```
 
-### Beispiel 2: Persistenter Store mit JSON
+### Beispiel 2: Persistenter Store mit JSON (Builder Pattern)
 
+```csharp
+public class JsonProductRegistrar : DataStoreRegistrarBase
+{
+    public JsonProductRegistrar(string jsonFilePath)
+    {
+        AddStore(new JsonDataStoreBuilder<Product>(
+            filePath: jsonFilePath,
+            autoLoad: true,
+            autoSave: true));
+    }
+}
+
+// Startup
+services.AddDataStoreRegistrar(
+    new JsonProductRegistrar("C:\\Data\\products.json"));
+```
+
+**Alternative (alte Methode - mehr Boilerplate):**
 ```csharp
 public class JsonProductRegistrar : IDataStoreRegistrar
 {
@@ -393,7 +443,7 @@ public class JsonProductRegistrar : IDataStoreRegistrar
 }
 ```
 
-### Beispiel 3: LiteDB-Persistierung mit EntityBase
+### Beispiel 3: LiteDB-Persistierung mit EntityBase (Builder Pattern)
 
 ```csharp
 public class Order : EntityBase
@@ -403,6 +453,25 @@ public class Order : EntityBase
     public DateTime OrderDate { get; set; }
 }
 
+public class LiteDbOrderRegistrar : DataStoreRegistrarBase
+{
+    public LiteDbOrderRegistrar(string dbPath)
+    {
+        // Collection name is automatically "Order" (from typeof(Order).Name)
+        AddStore(new LiteDbDataStoreBuilder<Order>(
+            databasePath: dbPath,
+            autoLoad: true,
+            autoSave: true));
+    }
+}
+
+// Startup
+services.AddDataStoreRegistrar(
+    new LiteDbOrderRegistrar("C:\\Data\\myapp.db"));
+```
+
+**Alternative (alte Methode - mehr Boilerplate):**
+```csharp
 public class LiteDbOrderRegistrar : IDataStoreRegistrar
 {
     private readonly string _dbPath;
@@ -427,7 +496,42 @@ public class LiteDbOrderRegistrar : IDataStoreRegistrar
 }
 ```
 
-### Beispiel 4: Eltern-Kind-Beziehung
+### Beispiel 4: Multi-Store Registrar mit verschiedenen Strategien
+
+```csharp
+public class MultiStoreRegistrar : DataStoreRegistrarBase
+{
+    public MultiStoreRegistrar(string dbPath)
+    {
+        // InMemory: Temporary data, no persistence
+        AddStore(new InMemoryDataStoreBuilder<Product>());
+        
+        // JSON: Configuration and settings
+        AddStore(new JsonDataStoreBuilder<Settings>(
+            filePath: "C:\\Data\\settings.json",
+            autoLoad: true,
+            autoSave: false)); // Read-only
+        
+        // LiteDB: Business entities with persistence
+        AddStore(new LiteDbDataStoreBuilder<Order>(
+            databasePath: dbPath));
+        
+        AddStore(new LiteDbDataStoreBuilder<Customer>(
+            databasePath: dbPath));
+        
+        // With custom comparer
+        AddStore(new InMemoryDataStoreBuilder<Category>(
+            comparer: new CategoryIdComparer()));
+        
+        // With UI-thread event marshalling (WPF)
+        AddStore(new JsonDataStoreBuilder<UserPreferences>(
+            filePath: "C:\\Data\\preferences.json",
+            synchronizationContext: SynchronizationContext.Current));
+    }
+}
+```
+
+### Beispiel 5: Eltern-Kind-Beziehung
 
 ```csharp
 public class Category
