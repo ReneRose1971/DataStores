@@ -28,4 +28,14 @@ public interface IGlobalStoreRegistry
     /// <param name="store">The resolved store, if found.</param>
     /// <returns><c>true</c> if a store was found; otherwise, <c>false</c>.</returns>
     bool TryResolveGlobal<T>(out IDataStore<T> store) where T : class;
+
+    /// <summary>
+    /// Gets all registered global stores that implement IAsyncInitializable.
+    /// </summary>
+    /// <returns>A collection of stores that require asynchronous initialization.</returns>
+    /// <remarks>
+    /// This method is typically called by the bootstrap process to initialize
+    /// persistent stores that need to load data asynchronously.
+    /// </remarks>
+    IEnumerable<Persistence.IAsyncInitializable> GetInitializableGlobalStores();
 }

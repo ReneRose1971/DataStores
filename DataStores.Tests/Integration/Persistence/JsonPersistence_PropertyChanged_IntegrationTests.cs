@@ -4,47 +4,27 @@ using System.Linq;
 using System.Threading.Tasks;
 using DataStores.Persistence;
 using DataStores.Runtime;
+using TestHelper.DataStores.Fixtures;
 using TestHelper.DataStores.Models;
 using Xunit;
 
 namespace DataStores.Tests.Integration.Persistence;
 
 [Trait("Category", "Integration")]
-public class JsonPersistence_PropertyChanged_IntegrationTests : IDisposable
+public class JsonPersistence_PropertyChanged_IntegrationTests : IClassFixture<JsonPersistenceTempFixture>
 {
     private readonly string _testRoot;
 
-    public JsonPersistence_PropertyChanged_IntegrationTests()
+    public JsonPersistence_PropertyChanged_IntegrationTests(JsonPersistenceTempFixture fixture)
     {
-        _testRoot = Path.Combine(
-            Path.GetTempPath(),
-            "DataStores.Tests.Integration",
-            "JsonPersistence",
-            Guid.NewGuid().ToString("N"));
-        
-        Directory.CreateDirectory(_testRoot);
-    }
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_testRoot))
-        {
-            try
-            {
-                Directory.Delete(_testRoot, recursive: true);
-            }
-            catch
-            {
-                // Best effort cleanup
-            }
-        }
+        _testRoot = fixture.TestRoot;
     }
 
     [Fact]
     public async Task JsonPersistence_Should_Create_File_On_Add_When_AutoSaveOnChange_Enabled()
     {
         // Arrange
-        var filePath = Path.Combine(_testRoot, "add_test.json");
+        var filePath = Path.Combine(_testRoot, $"{nameof(JsonPersistence_Should_Create_File_On_Add_When_AutoSaveOnChange_Enabled)}.json");
         var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
         var innerStore = new InMemoryDataStore<TestDto>();
         var decorator = new PersistentStoreDecorator<TestDto>(
@@ -70,7 +50,7 @@ public class JsonPersistence_PropertyChanged_IntegrationTests : IDisposable
     public async Task JsonPersistence_Should_Reflect_Remove_On_Save()
     {
         // Arrange
-        var filePath = Path.Combine(_testRoot, "remove_test.json");
+        var filePath = Path.Combine(_testRoot, $"{nameof(JsonPersistence_Should_Reflect_Remove_On_Save)}.json");
         var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
         var innerStore = new InMemoryDataStore<TestDto>();
         var decorator = new PersistentStoreDecorator<TestDto>(
@@ -104,7 +84,7 @@ public class JsonPersistence_PropertyChanged_IntegrationTests : IDisposable
     public async Task JsonPersistence_Should_Save_On_PropertyChanged()
     {
         // Arrange
-        var filePath = Path.Combine(_testRoot, "propertychanged_test.json");
+        var filePath = Path.Combine(_testRoot, $"{nameof(JsonPersistence_Should_Save_On_PropertyChanged)}.json");
         var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
         var innerStore = new InMemoryDataStore<TestDto>();
         var decorator = new PersistentStoreDecorator<TestDto>(
@@ -137,7 +117,7 @@ public class JsonPersistence_PropertyChanged_IntegrationTests : IDisposable
     public async Task JsonPersistence_Should_Not_Track_PropertyChanged_After_Remove()
     {
         // Arrange
-        var filePath = Path.Combine(_testRoot, "untrack_after_remove_test.json");
+        var filePath = Path.Combine(_testRoot, $"{nameof(JsonPersistence_Should_Not_Track_PropertyChanged_After_Remove)}.json");
         var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
         var innerStore = new InMemoryDataStore<TestDto>();
         var decorator = new PersistentStoreDecorator<TestDto>(
@@ -169,7 +149,7 @@ public class JsonPersistence_PropertyChanged_IntegrationTests : IDisposable
     public async Task JsonPersistence_Should_Track_Multiple_Items_PropertyChanged()
     {
         // Arrange
-        var filePath = Path.Combine(_testRoot, "multiple_items_test.json");
+        var filePath = Path.Combine(_testRoot, $"{nameof(JsonPersistence_Should_Track_Multiple_Items_PropertyChanged)}.json");
         var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
         var innerStore = new InMemoryDataStore<TestDto>();
         var decorator = new PersistentStoreDecorator<TestDto>(
@@ -205,7 +185,7 @@ public class JsonPersistence_PropertyChanged_IntegrationTests : IDisposable
     public async Task JsonPersistence_Should_Handle_Clear_And_PropertyChanged()
     {
         // Arrange
-        var filePath = Path.Combine(_testRoot, "clear_test.json");
+        var filePath = Path.Combine(_testRoot, $"{nameof(JsonPersistence_Should_Handle_Clear_And_PropertyChanged)}.json");
         var strategy = new JsonFilePersistenceStrategy<TestDto>(filePath);
         var innerStore = new InMemoryDataStore<TestDto>();
         var decorator = new PersistentStoreDecorator<TestDto>(

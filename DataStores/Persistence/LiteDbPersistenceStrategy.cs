@@ -94,46 +94,13 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
     /// <remarks>
     /// <para>
     /// Berechnet das Delta zwischen dem aktuellen Store-Zustand und der Datenbank
-    /// und führt die notwendigen INSERT/DELETE-Operationen aus.
+    /// und führt die notwendigen INSERT/DELETE-Operationen transaktional aus.
     /// </para>
-    /// <para>
-    /// <b>Implementierung:</b> Delegiert an die private SaveDeltaAsync-Methode.
-    /// </para>
-    /// </remarks>
-    public Task SaveAllAsync(IReadOnlyList<T> items, CancellationToken cancellationToken = default)
-    {
-        if (items == null)
-        {
-            throw new ArgumentNullException(nameof(items));
-        }
-
-        lock (_lock)
-        {
-            // DB-Zustand laden
-            using var db = new LiteDatabase(_databasePath);
-            var collection = db.GetCollection<T>(_collectionName);
-            var databaseItems = collection.FindAll().ToList();
-
-            // Delta berechnen
-            var diff = DataStoreDiffBuilder.ComputeDiff(items, databaseItems);
-
-            // An private SaveDeltaAsync delegieren
-            return SaveDeltaAsync(diff, cancellationToken);
-        }
-    }
-
-    /// <summary>
-    /// Speichert Delta-Änderungen transaktional (wird vom PersistentStoreDecorator via Reflection aufgerufen).
-    /// </summary>
-    /// <param name="diff">Das berechnete Diff mit Insert/Delete-Operationen.</param>
-    /// <param name="cancellationToken">Token zur Abbruchsteuerung.</param>
-    /// <returns>Ein Task, der die asynchrone Operation repräsentiert.</returns>
-    /// <remarks>
     /// <para>
     /// <b>Operationen:</b>
     /// </para>
     /// <list type="number">
-    /// <item><description>INSERT: Neue Entities (Id = 0) - LiteDB schreibt IDs automatisch zurück</description></item>
+    /// <item><description>INSERT: Neue Entities (Id = 0) - LiteDB schreibt IDs zurück in die Objekte</description></item>
     /// <item><description>DELETE: Entities die aus dem Store entfernt wurden</description></item>
     /// </list>
     /// <para>
@@ -141,16 +108,11 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
     /// Bei Fehlern erfolgt automatisch ein Rollback.
     /// </para>
     /// </remarks>
-    private Task SaveDeltaAsync(DataStoreDiff<T> diff, CancellationToken cancellationToken = default)
+    public Task SaveAllAsync(IReadOnlyList<T> items, CancellationToken cancellationToken = default)
     {
-        if (diff == null)
+        if (items == null)
         {
-            throw new ArgumentNullException(nameof(diff));
-        }
-
-        if (!diff.HasChanges)
-        {
-            return Task.CompletedTask;
+            throw new ArgumentNullException(nameof(items));
         }
 
         lock (_lock)
@@ -163,6 +125,15 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
 
             using var db = new LiteDatabase(_databasePath);
             var collection = db.GetCollection<T>(_collectionName);
+            
+            var databaseItems = collection.FindAll().ToList();
+
+            var diff = DataStoreDiffBuilder.ComputeDiff(items, databaseItems);
+
+            if (!diff.HasChanges)
+            {
+                return Task.CompletedTask;
+            }
 
             if (!db.BeginTrans())
             {
@@ -171,16 +142,14 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
 
             try
             {
-                // INSERT: Neue Entities (LiteDB schreibt IDs automatisch zurück)
                 if (diff.ToInsert.Count > 0)
                 {
                     foreach (var item in diff.ToInsert)
                     {
-                        var id = collection.Insert(item);
+                        collection.Insert(item);
                     }
                 }
 
-                // DELETE: Bulk-Operation
                 if (diff.ToDelete.Count > 0)
                 {
                     var idsToDelete = diff.ToDelete.Select(e => e.Id).ToList();

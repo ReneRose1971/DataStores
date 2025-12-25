@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using DataStores.Abstractions;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace DataStores.Runtime;
 
@@ -7,10 +9,10 @@ namespace DataStores.Runtime;
 /// Thread-sichere Implementierung von <see cref="IGlobalStoreRegistry"/>.
 /// </summary>
 /// <remarks>
-/// Diese Klasse verwaltet die Registrierung und Auflösung globaler Datenspeicher
+/// Diese Klasse verwaltet die Registrierung und AuflÃ¶sung globaler Datenspeicher
 /// in einer thread-sicheren Weise mittels <see cref="ConcurrentDictionary{TKey, TValue}"/>.
 /// Globale Stores sind application-wide Singletons und sollten beim Application-Start
-/// über <see cref="IDataStoreRegistrar"/> Implementierungen registriert werden.
+/// Ã¼ber <see cref="IDataStoreRegistrar"/> Implementierungen registriert werden.
 /// </remarks>
 public class GlobalStoreRegistry : IGlobalStoreRegistry
 {
@@ -20,19 +22,19 @@ public class GlobalStoreRegistry : IGlobalStoreRegistry
     /// <remarks>
     /// <para>
     /// Diese Methode ist thread-sicher und kann von mehreren Threads gleichzeitig aufgerufen werden.
-    /// Wenn bereits ein Store für den Typ <typeparamref name="T"/> registriert wurde,
-    /// wird eine <see cref="GlobalStoreAlreadyRegisteredException"/> ausgelöst.
+    /// Wenn bereits ein Store fÃ¼r den Typ <typeparamref name="T"/> registriert wurde,
+    /// wird eine <see cref="GlobalStoreAlreadyRegisteredException"/> ausgelÃ¶st.
     /// </para>
     /// <para>
-    /// Registrierungen sollten typischerweise während der Anwendungsinitialisierung
+    /// Registrierungen sollten typischerweise wÃ¤hrend der Anwendungsinitialisierung
     /// im <see cref="IDataStoreRegistrar.Register"/> vorgenommen werden.
     /// </para>
     /// </remarks>
     /// <exception cref="ArgumentNullException">
-    /// Wird ausgelöst, wenn <paramref name="store"/> null ist.
+    /// Wird ausgelÃ¶st, wenn <paramref name="store"/> null ist.
     /// </exception>
     /// <exception cref="GlobalStoreAlreadyRegisteredException">
-    /// Wird ausgelöst, wenn bereits ein Store für Typ <typeparamref name="T"/> registriert wurde.
+    /// Wird ausgelÃ¶st, wenn bereits ein Store fÃ¼r Typ <typeparamref name="T"/> registriert wurde.
     /// </exception>
     public void RegisterGlobal<T>(IDataStore<T> store) where T : class
     {
@@ -49,11 +51,11 @@ public class GlobalStoreRegistry : IGlobalStoreRegistry
     /// <inheritdoc/>
     /// <remarks>
     /// Diese Methode ist thread-sicher und kann von mehreren Threads gleichzeitig aufgerufen werden.
-    /// Wenn kein Store für den Typ <typeparamref name="T"/> registriert wurde,
-    /// wird eine <see cref="GlobalStoreNotRegisteredException"/> ausgelöst.
+    /// Wenn kein Store fÃ¼r den Typ <typeparamref name="T"/> registriert wurde,
+    /// wird eine <see cref="GlobalStoreNotRegisteredException"/> ausgelÃ¶st.
     /// </remarks>
     /// <exception cref="GlobalStoreNotRegisteredException">
-    /// Wird ausgelöst, wenn kein Store für Typ <typeparamref name="T"/> registriert wurde.
+    /// Wird ausgelÃ¶st, wenn kein Store fÃ¼r Typ <typeparamref name="T"/> registriert wurde.
     /// </exception>
     public IDataStore<T> ResolveGlobal<T>() where T : class
     {
@@ -69,8 +71,8 @@ public class GlobalStoreRegistry : IGlobalStoreRegistry
     /// <inheritdoc/>
     /// <remarks>
     /// Diese Methode ist thread-sicher und kann von mehreren Threads gleichzeitig aufgerufen werden.
-    /// Im Gegensatz zu <see cref="ResolveGlobal{T}"/> löst diese Methode keine Exception aus,
-    /// sondern gibt false zurück, wenn kein Store gefunden wurde.
+    /// Im Gegensatz zu <see cref="ResolveGlobal{T}"/> lÃ¶st diese Methode keine Exception aus,
+    /// sondern gibt false zurÃ¼ck, wenn kein Store gefunden wurde.
     /// </remarks>
     public bool TryResolveGlobal<T>(out IDataStore<T> store) where T : class
     {
@@ -83,5 +85,21 @@ public class GlobalStoreRegistry : IGlobalStoreRegistry
 
         store = null!;
         return false;
+    }
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// <para>
+    /// Diese Methode durchlÃ¤uft alle registrierten Stores und gibt diejenigen zurÃ¼ck,
+    /// die <see cref="Persistence.IAsyncInitializable"/> implementieren.
+    /// </para>
+    /// <para>
+    /// Die Methode ist thread-sicher und kann von mehreren Threads gleichzeitig aufgerufen werden.
+    /// Die zurÃ¼ckgegebene Collection ist eine Momentaufnahme zum Zeitpunkt des Aufrufs.
+    /// </para>
+    /// </remarks>
+    public IEnumerable<Persistence.IAsyncInitializable> GetInitializableGlobalStores()
+    {
+        return _stores.Values.OfType<Persistence.IAsyncInitializable>();
     }
 }

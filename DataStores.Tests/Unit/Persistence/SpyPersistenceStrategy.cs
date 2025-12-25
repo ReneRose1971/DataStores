@@ -8,28 +8,45 @@ namespace DataStores.Tests.Unit.Persistence;
 
 /// <summary>
 /// Spy-Implementation von IPersistenceStrategy für Unit-Tests.
-/// Zählt Save-Aufrufe ohne echtes Dateisystem.
+/// Zählt Save- und Update-Aufrufe ohne echtes Dateisystem.
 /// </summary>
 public class SpyPersistenceStrategy<T> : IPersistenceStrategy<T> where T : class
 {
     private readonly object _lock = new();
     private IReadOnlyList<T> _data;
     private int _saveCallCount;
+    private int _updateCallCount;
     private int _loadCallCount;
     private List<IReadOnlyList<T>> _savedSnapshots = new();
+    private List<T> _updatedEntities = new();
 
     public int SaveCallCount
     {
-        get { lock (_lock)
+        get
+        {
+            lock (_lock)
             {
                 return _saveCallCount;
             }
         }
     }
 
+    public int UpdateCallCount
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _updateCallCount;
+            }
+        }
+    }
+
     public int LoadCallCount
     {
-        get { lock (_lock)
+        get
+        {
+            lock (_lock)
             {
                 return _loadCallCount;
             }
@@ -38,9 +55,22 @@ public class SpyPersistenceStrategy<T> : IPersistenceStrategy<T> where T : class
 
     public IReadOnlyList<IReadOnlyList<T>> SavedSnapshots
     {
-        get { lock (_lock)
+        get
+        {
+            lock (_lock)
             {
                 return _savedSnapshots.AsReadOnly();
+            }
+        }
+    }
+
+    public IReadOnlyList<T> UpdatedEntities
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _updatedEntities.AsReadOnly();
             }
         }
     }
@@ -52,6 +82,17 @@ public class SpyPersistenceStrategy<T> : IPersistenceStrategy<T> where T : class
             lock (_lock)
             {
                 return _savedSnapshots.Count > 0 ? _savedSnapshots[^1] : null;
+            }
+        }
+    }
+
+    public T? LastUpdatedEntity
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _updatedEntities.Count > 0 ? _updatedEntities[^1] : null;
             }
         }
     }
@@ -78,15 +119,19 @@ public class SpyPersistenceStrategy<T> : IPersistenceStrategy<T> where T : class
         {
             _saveCallCount++;
             _data = items;
-            _savedSnapshots.Add(items.ToList()); // Snapshot speichern
+            _savedSnapshots.Add(items.ToList());
             return Task.CompletedTask;
         }
     }
 
     public Task UpdateSingleAsync(T item, CancellationToken cancellationToken = default)
     {
-        // Spy: No-Op (Tests tracken SaveCallCount)
-        return Task.CompletedTask;
+        lock (_lock)
+        {
+            _updateCallCount++;
+            _updatedEntities.Add(item);
+            return Task.CompletedTask;
+        }
     }
 
     public void SetItemsProvider(Func<IReadOnlyList<T>>? itemsProvider)
@@ -99,8 +144,10 @@ public class SpyPersistenceStrategy<T> : IPersistenceStrategy<T> where T : class
         lock (_lock)
         {
             _saveCallCount = 0;
+            _updateCallCount = 0;
             _loadCallCount = 0;
             _savedSnapshots.Clear();
+            _updatedEntities.Clear();
         }
     }
 }

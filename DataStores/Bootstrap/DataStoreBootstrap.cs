@@ -24,8 +24,16 @@ public static class DataStoreBootstrap
             registrar.Register(registry, serviceProvider);
         }
 
-        var initializables = serviceProvider.GetServices<IAsyncInitializable>();
-        foreach (var initializable in initializables)
+        // Initialize stores from registry
+        var initializableStores = registry.GetInitializableGlobalStores();
+        foreach (var initializable in initializableStores)
+        {
+            await initializable.InitializeAsync(cancellationToken);
+        }
+
+        // Initialize additional IAsyncInitializable services (if any)
+        var initializableServices = serviceProvider.GetServices<IAsyncInitializable>();
+        foreach (var initializable in initializableServices)
         {
             await initializable.InitializeAsync(cancellationToken);
         }

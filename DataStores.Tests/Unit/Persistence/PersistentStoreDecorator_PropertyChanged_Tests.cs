@@ -72,14 +72,14 @@ public class PersistentStoreDecorator_PropertyChanged_Tests
         spy.Reset(); // Reset counter after initial add
 
         // Act
-        person.Name = "Changed"; // PropertyChanged sollte Save triggern
-        await Task.Delay(100); // Wait for async save
+        person.Name = "Changed"; // PropertyChanged sollte UpdateSingleAsync triggern
+        await Task.Delay(100); // Wait for async update
 
         // Assert
-        Assert.True(spy.SaveCallCount > 0, 
-            "Save should be called when property changes on tracked item");
-        Assert.NotNull(spy.LastSavedSnapshot);
-        Assert.Equal("Changed", spy.LastSavedSnapshot![0].Name);
+        Assert.True(spy.UpdateCallCount > 0, 
+            "UpdateSingleAsync should be called when property changes on tracked item");
+        Assert.NotNull(spy.LastUpdatedEntity);
+        Assert.Equal("Changed", spy.LastUpdatedEntity!.Name);
     }
 
     [Fact]
@@ -130,14 +130,15 @@ public class PersistentStoreDecorator_PropertyChanged_Tests
         // Act
         person1.Name = "Changed1";
         await Task.Delay(100);
-        var saveCountAfterFirst = spy.SaveCallCount;
+        var updateCountAfterFirst = spy.UpdateCallCount;
 
         person2.Name = "Changed2";
         await Task.Delay(100);
 
         // Assert
-        Assert.True(saveCountAfterFirst > 0, "Save should be called for person1");
-        Assert.True(spy.SaveCallCount > saveCountAfterFirst, "Save should be called for person2");
+        Assert.True(updateCountAfterFirst > 0, "UpdateSingleAsync should be called for person1");
+        Assert.True(spy.UpdateCallCount > updateCountAfterFirst, "UpdateSingleAsync should be called for person2");
+        Assert.Equal(2, spy.UpdatedEntities.Count);
     }
 
     [Fact]

@@ -4,47 +4,27 @@ using System.Linq;
 using System.Threading.Tasks;
 using DataStores.Persistence;
 using DataStores.Runtime;
+using TestHelper.DataStores.Fixtures;
 using TestHelper.DataStores.Models;
 using Xunit;
 
 namespace DataStores.Tests.Integration.Persistence;
 
 [Trait("Category", "Integration")]
-public class LiteDbPersistence_PropertyChanged_IntegrationTests : IDisposable
+public class LiteDbPersistence_PropertyChanged_IntegrationTests : IClassFixture<LiteDbPersistenceTempFixture>
 {
     private readonly string _testRoot;
 
-    public LiteDbPersistence_PropertyChanged_IntegrationTests()
+    public LiteDbPersistence_PropertyChanged_IntegrationTests(LiteDbPersistenceTempFixture fixture)
     {
-        _testRoot = Path.Combine(
-            Path.GetTempPath(),
-            "DataStores.Tests.Integration",
-            "LiteDbPersistence",
-            Guid.NewGuid().ToString("N"));
-        
-        Directory.CreateDirectory(_testRoot);
-    }
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_testRoot))
-        {
-            try
-            {
-                Directory.Delete(_testRoot, recursive: true);
-            }
-            catch
-            {
-                // Best effort cleanup
-            }
-        }
+        _testRoot = fixture.TestRoot;
     }
 
     [Fact]
     public async Task LiteDbPersistence_Should_Create_DbFile_On_Add_When_AutoSaveOnChange_Enabled()
     {
         // Arrange
-        var dbPath = Path.Combine(_testRoot, "add_test.db");
+        var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Create_DbFile_On_Add_When_AutoSaveOnChange_Enabled)}.db");
         var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
@@ -70,7 +50,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IDisposable
     public async Task LiteDbPersistence_Should_Reflect_Remove_On_Save()
     {
         // Arrange
-        var dbPath = Path.Combine(_testRoot, "remove_test.db");
+        var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Reflect_Remove_On_Save)}.db");
         var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
@@ -104,7 +84,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IDisposable
     public async Task LiteDbPersistence_Should_Save_On_PropertyChanged()
     {
         // Arrange
-        var dbPath = Path.Combine(_testRoot, "propertychanged_test.db");
+        var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Save_On_PropertyChanged)}.db");
         var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
@@ -137,7 +117,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IDisposable
     public async Task LiteDbPersistence_Should_Track_Multiple_Items_PropertyChanged()
     {
         // Arrange
-        var dbPath = Path.Combine(_testRoot, "multiple_items_test.db");
+        var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Track_Multiple_Items_PropertyChanged)}.db");
         var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
@@ -173,7 +153,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IDisposable
     public async Task LiteDbPersistence_Should_Not_Track_PropertyChanged_After_Remove()
     {
         // Arrange
-        var dbPath = Path.Combine(_testRoot, "untrack_after_remove_test.db");
+        var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Not_Track_PropertyChanged_After_Remove)}.db");
         var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
@@ -205,7 +185,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IDisposable
     public async Task LiteDbPersistence_Should_Handle_Clear_And_PropertyChanged()
     {
         // Arrange
-        var dbPath = Path.Combine(_testRoot, "clear_test.db");
+        var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Handle_Clear_And_PropertyChanged)}.db");
         var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(

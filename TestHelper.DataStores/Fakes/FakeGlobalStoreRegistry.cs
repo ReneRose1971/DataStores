@@ -14,6 +14,7 @@ public class FakeGlobalStoreRegistry : IGlobalStoreRegistry
     public int RegisterCallCount { get; private set; }
     public int ResolveGlobalCallCount { get; private set; }
     public int TryResolveGlobalCallCount { get; private set; }
+    public int GetInitializableGlobalStoresCallCount { get; private set; }
     public bool ThrowOnRegister { get; set; }
     public bool ThrowOnResolveGlobal { get; set; }
     public List<(string Action, Type Type, object? Store)> History { get; } = new();
@@ -61,6 +62,14 @@ public class FakeGlobalStoreRegistry : IGlobalStoreRegistry
         return false;
     }
 
+    public IEnumerable<global::DataStores.Persistence.IAsyncInitializable> GetInitializableGlobalStores()
+    {
+        GetInitializableGlobalStoresCallCount++;
+        History.Add(("GetInitializableGlobalStores", typeof(void), null));
+        
+        return _stores.Values.OfType<global::DataStores.Persistence.IAsyncInitializable>();
+    }
+
     public void Dispose()
     {
         History.Add(("Dispose", typeof(void), null));
@@ -74,6 +83,7 @@ public class FakeGlobalStoreRegistry : IGlobalStoreRegistry
         RegisterCallCount = 0;
         ResolveGlobalCallCount = 0;
         TryResolveGlobalCallCount = 0;
+        GetInitializableGlobalStoresCallCount = 0;
         ThrowOnRegister = false;
         ThrowOnResolveGlobal = false;
     }

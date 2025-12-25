@@ -87,48 +87,6 @@ public class DataStoreDiffBuilder_Tests
         Assert.All(diff.ToInsert, item => Assert.Equal(0, item.Id));
     }
 
-    [Fact]
-    public void ComputeDiff_WithMissingIds_DetectsInserts()
-    {
-        // Arrange - Items mit Id > 0 die nicht in DB sind (Missing IDs Policy)
-        var dataStoreItems = new List<TestEntity>
-        {
-            new TestEntity { Id = 99, Name = "Missing1" },
-            new TestEntity { Id = 100, Name = "Missing2" }
-        };
-
-        var databaseItems = Array.Empty<TestEntity>();
-
-        // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
-
-        // Assert
-        Assert.Equal(2, diff.ToInsert.Count);
-        Assert.Empty(diff.ToDelete);
-        Assert.Contains(diff.ToInsert, item => item.Id == 99);
-        Assert.Contains(diff.ToInsert, item => item.Id == 100);
-    }
-
-    [Fact]
-    public void ComputeDiff_WithMixedNewAndMissingIds_DetectsBothAsInserts()
-    {
-        // Arrange
-        var dataStoreItems = new List<TestEntity>
-        {
-            new TestEntity { Id = 0, Name = "New" },
-            new TestEntity { Id = 42, Name = "MissingId" }
-        };
-
-        var databaseItems = Array.Empty<TestEntity>();
-
-        // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
-
-        // Assert
-        Assert.Equal(2, diff.ToInsert.Count);
-        Assert.Empty(diff.ToDelete);
-    }
-
     #endregion
 
     #region DELETE Detection
@@ -208,36 +166,6 @@ public class DataStoreDiffBuilder_Tests
         Assert.Single(diff.ToDelete);
         Assert.Equal(0, diff.ToInsert[0].Id);
         Assert.Equal(2, diff.ToDelete[0].Id);
-    }
-
-    [Fact]
-    public void ComputeDiff_WithAllOperations_DetectsCorrectly()
-    {
-        // Arrange
-        var dataStoreItems = new List<TestEntity>
-        {
-            new TestEntity { Id = 1, Name = "Keep1" },      // Bleibt
-            new TestEntity { Id = 2, Name = "Keep2" },      // Bleibt
-            new TestEntity { Id = 0, Name = "New1" },       // INSERT (Id = 0)
-            new TestEntity { Id = 0, Name = "New2" },       // INSERT (Id = 0)
-            new TestEntity { Id = 99, Name = "MissingId" }  // INSERT (Missing ID)
-        };
-
-        var databaseItems = new List<TestEntity>
-        {
-            new TestEntity { Id = 1, Name = "Keep1" },      // Bleibt
-            new TestEntity { Id = 2, Name = "Keep2" },      // Bleibt
-            new TestEntity { Id = 3, Name = "Delete1" },    // DELETE
-            new TestEntity { Id = 4, Name = "Delete2" }     // DELETE
-        };
-
-        // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
-
-        // Assert
-        Assert.Equal(3, diff.ToInsert.Count);  // 2x Id=0 + 1x Id=99
-        Assert.Equal(2, diff.ToDelete.Count);  // Id=3, Id=4
-        Assert.True(diff.HasChanges);
     }
 
     #endregion

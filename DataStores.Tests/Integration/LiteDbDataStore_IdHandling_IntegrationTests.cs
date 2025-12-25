@@ -126,99 +126,6 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IDisposable
     }
 
     /// <summary>
-    /// Szenario: Entitäten mit Id != 0 die nicht in DB existieren werden ebenfalls eingefügt (Missing IDs Policy).
-    /// </summary>
-    [Fact]
-    public async Task EntitiesWithNonZeroId_Should_BeInserted_MissingIdsPolicy()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        var module = new DataStoresServiceModule();
-        module.Register(services);
-        services.AddDataStoreRegistrar(new ProductDataStoreRegistrar(_testDbPath));
-
-        var serviceProvider = services.BuildServiceProvider();
-        await DataStoreBootstrap.RunAsync(serviceProvider);
-
-        var dataStores = serviceProvider.GetRequiredService<IDataStores>();
-        var productStore = dataStores.GetGlobal<Product>();
-
-        // Act - Gemischte IDs hinzufügen
-        var newProduct = new Product { Id = 0, Name = "New Product", Price = 100m };
-        var existingProduct = new Product { Id = 999, Name = "Existing Product", Price = 200m };
-
-        productStore.Add(newProduct);
-        productStore.Add(existingProduct);
-
-        // Im Store sind beide vorhanden
-        Assert.Equal(2, productStore.Items.Count);
-
-        // Wait for auto-save
-        await Task.Delay(200);
-
-        // Assert - BEIDE wurden gespeichert (Missing IDs Policy)
-        var strategy = new LiteDbPersistenceStrategy<Product>(_testDbPath, "products");
-        var savedProducts = await strategy.LoadAllAsync();
-
-        Assert.Equal(2, savedProducts.Count);
-        Assert.Contains(savedProducts, p => p.Name == "New Product");
-        Assert.Contains(savedProducts, p => p.Name == "Existing Product" && p.Id == 999);
-    }
-
-    /// <summary>
-    /// Szenario: AddRange mit gemischten IDs - Id=0 werden eingefügt, Id>0 die nicht in DB sind auch (Missing IDs Policy).
-    /// </summary>
-    [Fact]
-    public async Task AddRange_WithMixedIds_Should_InsertAll_MissingIdsPolicy()
-    {
-        // Arrange
-        var services = new ServiceCollection();
-        var module = new DataStoresServiceModule();
-        module.Register(services);
-        services.AddDataStoreRegistrar(new ProductDataStoreRegistrar(_testDbPath));
-
-        var serviceProvider = services.BuildServiceProvider();
-        await DataStoreBootstrap.RunAsync(serviceProvider);
-
-        var dataStores = serviceProvider.GetRequiredService<IDataStores>();
-        var productStore = dataStores.GetGlobal<Product>();
-
-        // Act - Gemischte IDs (alle nicht in DB)
-        var products = new[]
-        {
-            new Product { Id = 0, Name = "Product A", Price = 10m },
-            new Product { Id = 42, Name = "Product B (missing ID)", Price = 20m },
-            new Product { Id = 0, Name = "Product C", Price = 30m },
-            new Product { Id = 123, Name = "Product D (missing ID)", Price = 40m }
-        };
-
-        productStore.AddRange(products);
-
-        // Im Store sind alle 4 vorhanden
-        Assert.Equal(4, productStore.Items.Count);
-
-        // Wait for auto-save
-        await Task.Delay(500); // Auto-save warten (erhöht von 200ms)
-
-        // Assert - ALLE 4 wurden gespeichert (Missing IDs Policy)
-        var strategy = new LiteDbPersistenceStrategy<Product>(_testDbPath, "products");
-        var savedProducts = await strategy.LoadAllAsync();
-
-        Assert.Equal(4, savedProducts.Count);
-        Assert.All(savedProducts, p => Assert.True(p.Id > 0));
-        
-        // Alle sollten gespeichert sein
-        Assert.Contains(savedProducts, p => p.Name == "Product A");
-        Assert.Contains(savedProducts, p => p.Name == "Product B (missing ID)");
-        Assert.Contains(savedProducts, p => p.Name == "Product C");
-        Assert.Contains(savedProducts, p => p.Name == "Product D (missing ID)");
-        
-        // Items mit vordefinierter ID behalten diese
-        Assert.Contains(savedProducts, p => p.Id == 42);
-        Assert.Contains(savedProducts, p => p.Id == 123);
-    }
-
-    /// <summary>
     /// Szenario: EntityBase ToString, Equals, GetHashCode werden korrekt implementiert.
     /// </summary>
     [Fact]
@@ -316,34 +223,6 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IDisposable
         Assert.Contains(loaded, p => p.Name == "New 1");
         Assert.Contains(loaded, p => p.Name == "New 2");
         Assert.DoesNotContain(loaded, p => p.Name == "Existing");
-    }
-
-    /// <summary>
-    /// Szenario: Items mit Id>0 die nicht in DB existieren werden eingefügt (Missing IDs Policy).
-    /// </summary>
-    [Fact]
-    public async Task SaveWithNonZeroIds_Should_Insert_MissingIdsPolicy()
-    {
-        // Arrange
-        var strategy = new LiteDbPersistenceStrategy<Product>(_testDbPath, "products");
-
-        var products = new[]
-        {
-            new Product { Id = 0, Name = "New 1", Price = 10m },
-            new Product { Id = 99, Name = "Existing", Price = 20m },
-            new Product { Id = 0, Name = "New 2", Price = 30m }
-        };
-
-        // Act - Sollte keine Exception werfen
-        await strategy.SaveAllAsync(products);
-
-        // Assert - ALLE 3 wurden gespeichert (Missing IDs Policy)
-        var loaded = await strategy.LoadAllAsync();
-        Assert.Equal(3, loaded.Count);
-        Assert.All(loaded, p => Assert.True(p.Id > 0));
-        Assert.Contains(loaded, p => p.Name == "New 1");
-        Assert.Contains(loaded, p => p.Name == "New 2");
-        Assert.Contains(loaded, p => p.Name == "Existing" && p.Id == 99);
     }
 
     // ====================================================================

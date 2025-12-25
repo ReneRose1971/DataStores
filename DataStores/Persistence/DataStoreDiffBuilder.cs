@@ -59,19 +59,10 @@ public static class DataStoreDiffBuilder
             .Where(e => e.Id > 0)
             .ToDictionary(e => e.Id);
 
-        // INSERT: 
-        // (a) Alle neuen Items (Id = 0)
-        // (b) Items mit Id > 0 die NICHT in DB existieren (Missing IDs Policy)
-        var toInsert = new List<T>();
-        toInsert.AddRange(dataStoreItems.Where(item => item.Id == 0));
-        
-        foreach (var item in dataStoreItems.Where(item => item.Id > 0))
-        {
-            if (!dbById.ContainsKey(item.Id))
-            {
-                toInsert.Add(item);
-            }
-        }
+        // INSERT: Nur neue Items (Id = 0)
+        var toInsert = dataStoreItems
+            .Where(item => item.Id == 0)
+            .ToList();
 
         // DELETE: Items aus DB, die nicht mehr im DataStore sind
         // Erstelle Set aller IDs im DataStore (nur Id > 0)
