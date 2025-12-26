@@ -8,6 +8,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "References", "References", "{790D6944-5305-4B7A-890A-99B6B80BAC60}"
 	ProjectSection(SolutionItems) = preProject
 		..\..\..\Documents\Visual Studio 2022\Projects\CSharp\copilot\BOOTSTRAP.md = ..\..\..\Documents\Visual Studio 2022\Projects\CSharp\copilot\BOOTSTRAP.md
+		..\..\..\Documents\Visual Studio 2022\Projects\CSharp\copilot\DataStores.md = ..\..\..\Documents\Visual Studio 2022\Projects\CSharp\copilot\DataStores.md
 		..\..\..\Documents\Visual Studio 2022\Projects\CSharp\copilot\global-copilot-instructions.md = ..\..\..\Documents\Visual Studio 2022\Projects\CSharp\copilot\global-copilot-instructions.md
 	EndProjectSection
 EndProject

@@ -122,7 +122,61 @@ dotnet add package DataStores
 
 ## Schnellstart
 
-### 1. Services registrieren
+### Option 1: Mit Common.Bootstrap (EMPFOHLEN - Automatisches Scanning)
+
+Der empfohlene Weg nutzt `DataStoresBootstrapDecorator` für automatische Service-Registrierung.
+
+```csharp
+using Common.Bootstrap;
+using DataStores.Bootstrap;
+using Microsoft.Extensions.DependencyInjection;
+
+var services = new ServiceCollection();
+
+// 1. PathProvider registrieren
+var pathProvider = new DataStorePathProvider("MyApp");
+services.AddSingleton<IDataStorePathProvider>(pathProvider);
+
+// 2. DefaultBootstrapWrapper instanziieren
+var defaultWrapper = new DefaultBootstrapWrapper();
+
+// 3. DataStoresBootstrapDecorator instanziieren
+var bootstrap = new DataStoresBootstrapDecorator(defaultWrapper);
+
+// 4. Services aus Assemblies registrieren (automatisches Scanning)
+bootstrap.RegisterServices(
+    services,
+    typeof(DefaultBootstrapWrapper).Assembly,      // Common.Bootstrap
+    typeof(DataStoresBootstrapDecorator).Assembly  // DataStores
+);
+
+// 5. ServiceProvider bauen und Bootstrap ausführen
+var provider = services.BuildServiceProvider();
+await DataStoreBootstrap.RunAsync(provider);
+
+// 6. Stores verwenden
+var stores = provider.GetRequiredService<IDataStores>();
+var productStore = stores.GetGlobal<Product>();
+productStore.Add(new Product { Id = 1, Name = "Laptop" });
+```
+
+**Was wird automatisch registriert:**
+- ✅ **IServiceModule** - Alle Service-Module (z.B. DataStoresServiceModule)
+- ✅ **IEqualityComparer\<T\>** - Custom Equality-Comparer
+- ✅ **IDataStoreRegistrar** - Store-Registrierungen (mit parameterlosem Konstruktor)
+
+**Vorteile:**
+- Automatische Erkennung aller Registrars
+- Keine manuelle Registrierung erforderlich
+- Convention over Configuration
+
+---
+
+### Option 2: Manuell (Ohne Common.Bootstrap)
+
+Für Projekte ohne Common.Bootstrap oder mit parametrisierten Registrars.
+
+#### 1. Services registrieren
 
 ```csharp
 using DataStores.Bootstrap;
@@ -140,7 +194,7 @@ services.AddDataStoreRegistrar(new MyAppStoreRegistrar("C:\\Data\\myapp.db"));
 var serviceProvider = services.BuildServiceProvider();
 ```
 
-### 2. Registrar implementieren (EMPFOHLEN: Builder Pattern)
+#### 2. Registrar implementieren (EMPFOHLEN: Builder Pattern)
 
 ```csharp
 using DataStores.Registration;
@@ -178,14 +232,14 @@ public class ProductStoreRegistrar : IDataStoreRegistrar
 }
 ```
 
-### 3. Bootstrap ausführen
+#### 3. Bootstrap ausführen
 
 ```csharp
 // MUST be called once during startup, after building service provider
 await DataStoreBootstrap.RunAsync(serviceProvider);
 ```
 
-### 4. Stores verwenden
+#### 4. Stores verwenden
 
 ```csharp
 using DataStores.Abstractions;
@@ -317,6 +371,10 @@ store.Changed += (sender, e) =>
 
 ## Dokumentation
 
+### Hauptdokumentation
+
+- **[DataStores.md](../DataStores.md)** - **Vollständiger Bootstrap-Prozess** mit Common.Bootstrap Integration
+
 ### Detaillierte Guides
 
 - **[API Referenz](Docs/API-Reference.md)** - Vollständige API-Dokumentation
@@ -326,36 +384,8 @@ store.Changed += (sender, e) =>
 - **[Beziehungen Guide](Docs/Relations-Guide.md)** - Eltern-Kind-Beziehungen
 - **[LiteDB Integration](Docs/LiteDB-Integration.md)** - LiteDB-Persistierung
 - **[Registrar Best Practices](Docs/Registrar-Best-Practices.md)** - Registrar-Patterns
-
-### API-Übersicht
-
-#### Abstractions (Interfaces)
-- `IDataStore<T>` - Hauptschnittstelle für Datenspeicher
-- `IDataStores` - Facade für den Zugriff auf Stores
-- `IGlobalStoreRegistry` - Verwaltung globaler Stores
-- `IDataStoreRegistrar` - Registrierung beim Bootstrap
-- `DataStoreChangedEventArgs<T>` - Event-Daten
-
-#### Runtime (Implementierungen)
-- `InMemoryDataStore<T>` - Thread-sichere In-Memory-Implementierung
-- `DataStoresFacade` - Facade-Implementierung
-- `GlobalStoreRegistry` - Thread-sichere Registry
-- `LocalDataStoreFactory` - Factory für lokale Stores
-
-#### Persistence (Persistierung)
-- `IPersistenceStrategy<T>` - Schnittstelle für Persistierung
-- `PersistentStoreDecorator<T>` - Decorator mit Auto-Load/Save
-- `JsonFilePersistenceStrategy<T>` - JSON-basierte Persistierung
-- `LiteDbPersistenceStrategy<T>` - LiteDB-basierte Persistierung
-
-#### Relations (Beziehungen)
-- `ParentChildRelationship<TParent, TChild>` - Hierarchische Beziehungen
-- `IParentChildRelationService` - Service für Beziehungsverwaltung
-
-#### Bootstrap (Initialisierung)
-- `DataStoreBootstrap` - Bootstrap-Prozess
-- `ServiceCollectionExtensions` - DI-Erweiterungen
-- `DataStoresServiceModule` - Service-Modul
+- **[Assembly Scanning Guide](Docs/Assembly-Scanning-Guide.md)** - Automatische Registrar-Erkennung
+- **[DataStoresBootstrapDecorator Guide](Docs/DataStoresBootstrapDecorator-Guide.md)** - Bootstrap-Decorator Details
 
 ## Beispiele
 
@@ -609,8 +639,29 @@ DataStores/
 
 - .NET 8.0 oder höher
 - Microsoft.Extensions.DependencyInjection.Abstractions 10.0.1+
+- **Common.Bootstrap** (empfohlen für automatisches Scanning)
 - LiteDB 5.0.21+ (optional, für LiteDB-Persistierung)
 - System.Text.Json (enthalten in .NET 8)
+
+## Schnellreferenz: Bootstrap-Optionen
+
+### Mit Common.Bootstrap (Automatisch)
+```csharp
+// Automatisches Scanning aller IServiceModule, IEqualityComparer<T>, IDataStoreRegistrar
+var bootstrap = new DataStoresBootstrapDecorator(new DefaultBootstrapWrapper());
+bootstrap.RegisterServices(services, 
+    typeof(DefaultBootstrapWrapper).Assembly,
+    typeof(DataStoresBootstrapDecorator).Assembly);
+```
+
+### Ohne Common.Bootstrap (Manuell)
+```csharp
+// Manuelle Registrierung
+new DataStoresServiceModule().Register(services);
+services.AddDataStoreRegistrar(new MyRegistrar());
+```
+
+**Siehe [DataStores.md](../DataStores.md) für vollständige Details zum Bootstrap-Prozess.**
 
 ## Beitragen
 
