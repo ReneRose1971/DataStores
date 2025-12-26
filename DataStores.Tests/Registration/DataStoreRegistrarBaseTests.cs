@@ -3,6 +3,7 @@ using DataStores.Bootstrap;
 using DataStores.Registration;
 using DataStores.Runtime;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelper.DataStores.PathProviders;
 
 namespace DataStores.Tests.Registration;
 
@@ -17,7 +18,9 @@ public class DataStoreRegistrarBaseTests
 
     private class SimpleRegistrar : DataStoreRegistrarBase
     {
-        public SimpleRegistrar()
+        public SimpleRegistrar() { }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
         {
             AddStore(new InMemoryDataStoreBuilder<TestEntity>());
         }
@@ -28,8 +31,13 @@ public class DataStoreRegistrarBaseTests
     {
         var registrar = new SimpleRegistrar();
         var registry = new GlobalStoreRegistry();
+        
+        // Create a service collection with PathProvider
+        var services = new ServiceCollection();
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        var provider = services.BuildServiceProvider();
 
-        registrar.Register(registry, null!);
+        registrar.Register(registry, provider);
 
         var store = registry.ResolveGlobal<TestEntity>();
         Assert.NotNull(store);
@@ -40,8 +48,13 @@ public class DataStoreRegistrarBaseTests
     {
         var registrar = new MultiStoreRegistrar();
         var registry = new GlobalStoreRegistry();
+        
+        // Create a service collection with PathProvider
+        var services = new ServiceCollection();
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        var provider = services.BuildServiceProvider();
 
-        registrar.Register(registry, null!);
+        registrar.Register(registry, provider);
 
         Assert.NotNull(registry.ResolveGlobal<Product>());
         Assert.NotNull(registry.ResolveGlobal<Customer>());
@@ -59,7 +72,9 @@ public class DataStoreRegistrarBaseTests
 
     private class MultiStoreRegistrar : DataStoreRegistrarBase
     {
-        public MultiStoreRegistrar()
+        public MultiStoreRegistrar() { }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
         {
             AddStore(new InMemoryDataStoreBuilder<Product>());
             AddStore(new InMemoryDataStoreBuilder<Customer>());
@@ -72,6 +87,7 @@ public class DataStoreRegistrarBaseTests
         var services = new ServiceCollection();
         var module = new DataStoresServiceModule();
         module.Register(services);
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
         services.AddDataStoreRegistrar<SimpleRegistrar>();
 
         var provider = services.BuildServiceProvider();

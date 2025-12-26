@@ -3,6 +3,8 @@ using DataStores.Bootstrap;
 using DataStores.Registration;
 using Microsoft.Extensions.DependencyInjection;
 using TestHelper.DataStores.Models;
+using TestHelper.DataStores.PathProviders;
+using TestHelper.DataStores.TestSetup;
 
 namespace DataStores.Tests.Integration;
 
@@ -53,6 +55,9 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
         var module = new DataStoresServiceModule();
         module.Register(services);
 
+        // Step 2.5: Register PathProvider for tests
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+
         // Step 3: Register Builder-based Registrar
         services.AddDataStoreRegistrar(new InMemoryOnlyRegistrar());
 
@@ -75,8 +80,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
     public async Task CompleteStartupFlow_WithJsonBuilder_Should_Work()
     {
         // Step 1-2: Setup
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
 
         // Step 3: Register JSON Builder
         services.AddDataStoreRegistrar(new JsonOnlyRegistrar(_testJsonPath));
@@ -100,8 +104,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
     public async Task CompleteStartupFlow_WithLiteDbBuilder_Should_Work()
     {
         // Step 1-2: Setup
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
 
         // Step 3: Register LiteDB Builder
         services.AddDataStoreRegistrar(new LiteDbOnlyRegistrar(_testDbPath));
@@ -129,8 +132,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
     public async Task MultiStoreRegistrar_Should_RegisterAllStoreTypes()
     {
         // Arrange
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
 
         // Registrar with InMemory, JSON, and LiteDB stores
         services.AddDataStoreRegistrar(new MultiTypeRegistrar(_testDbPath, _testJsonPath));
@@ -155,8 +157,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
     public async Task MultiStoreRegistrar_Should_AllowDataOperationsOnAllStores()
     {
         // Arrange
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new MultiTypeRegistrar(_testDbPath, _testJsonPath));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -186,8 +187,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
     public async Task MultiStoreRegistrar_Should_PersistOnlyPersistentStores()
     {
         // Arrange
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new MultiTypeRegistrar(_testDbPath, _testJsonPath));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -216,8 +216,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
     {
         // Arrange
         var comparer = new ProductIdComparer();
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new ComparerRegistrar(comparer));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -242,8 +241,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
     {
         // Arrange
         var syncContext = new TestSynchronizationContext();
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new SyncContextRegistrar(syncContext));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -271,8 +269,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
         // Arrange
         var comparer = new ProductIdComparer();
         var syncContext = new TestSynchronizationContext();
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new AdvancedRegistrar(_testJsonPath, comparer, syncContext));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -315,8 +312,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
         await File.WriteAllTextAsync(_testJsonPath, 
             System.Text.Json.JsonSerializer.Serialize(testData));
 
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new JsonOnlyRegistrar(_testJsonPath));
 
         // Act: Bootstrap (should load existing data)
@@ -335,8 +331,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
     public async Task JsonBuilder_WithAutoSaveTrue_Should_PersistChanges()
     {
         // Arrange
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new JsonOnlyRegistrar(_testJsonPath));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -362,8 +357,7 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
     public async Task StartupFlow_WithoutBootstrap_Should_ThrowOnStoreAccess()
     {
         // Arrange: Skip bootstrap step
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new InMemoryOnlyRegistrar());
 
         _serviceProvider = services.BuildServiceProvider();
@@ -377,25 +371,20 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task MultipleBootstrap_Should_BeIdempotent()
+    public async Task MultipleBootstrap_Should_ThrowOnSecondCall()
     {
         // Arrange
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new InMemoryOnlyRegistrar());
 
         _serviceProvider = services.BuildServiceProvider();
 
-        // Act: Call bootstrap twice
+        // Act: Call bootstrap once
         await DataStoreBootstrap.RunAsync(_serviceProvider);
-        await DataStoreBootstrap.RunAsync(_serviceProvider); // Second call
 
-        var stores = _serviceProvider.GetRequiredService<IDataStores>();
-        var store = stores.GetGlobal<TestEntity>();
-
-        // Assert: Store still works correctly
-        store.Add(new TestEntity { Name = "Test" });
-        Assert.Single(store.Items);
+        // Assert: Second bootstrap call should throw (stores already registered)
+        await Assert.ThrowsAsync<GlobalStoreAlreadyRegisteredException>(
+            async () => await DataStoreBootstrap.RunAsync(_serviceProvider));
     }
 
     // ====================================================================
@@ -404,7 +393,9 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
 
     private class InMemoryOnlyRegistrar : DataStoreRegistrarBase
     {
-        public InMemoryOnlyRegistrar()
+        public InMemoryOnlyRegistrar() { }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
         {
             AddStore(new InMemoryDataStoreBuilder<TestEntity>());
         }
@@ -412,10 +403,17 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
 
     private class JsonOnlyRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _jsonPath;
+
         public JsonOnlyRegistrar(string jsonPath)
         {
+            _jsonPath = jsonPath;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new JsonDataStoreBuilder<TestDto>(
-                filePath: jsonPath,
+                filePath: _jsonPath,
                 autoLoad: true,
                 autoSave: true));
         }
@@ -423,10 +421,17 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
 
     private class LiteDbOnlyRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _dbPath;
+
         public LiteDbOnlyRegistrar(string dbPath)
         {
+            _dbPath = dbPath;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new LiteDbDataStoreBuilder<TestEntity>(
-                databasePath: dbPath,
+                databasePath: _dbPath,
                 autoLoad: true,
                 autoSave: true));
         }
@@ -434,42 +439,76 @@ public class BuilderPattern_EndToEnd_IntegrationTests : IAsyncLifetime
 
     private class MultiTypeRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _dbPath;
+        private readonly string _jsonPath;
+
         public MultiTypeRegistrar(string dbPath, string jsonPath)
         {
+            _dbPath = dbPath;
+            _jsonPath = jsonPath;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new InMemoryDataStoreBuilder<Product>());
-            AddStore(new JsonDataStoreBuilder<Customer>(jsonPath));
-            AddStore(new LiteDbDataStoreBuilder<TestEntity>(dbPath));
+            AddStore(new JsonDataStoreBuilder<Customer>(_jsonPath));
+            AddStore(new LiteDbDataStoreBuilder<TestEntity>(_dbPath));
         }
     }
 
     private class ComparerRegistrar : DataStoreRegistrarBase
     {
+        private readonly IEqualityComparer<Product> _comparer;
+
         public ComparerRegistrar(IEqualityComparer<Product> comparer)
         {
-            AddStore(new InMemoryDataStoreBuilder<Product>(comparer: comparer));
+            _comparer = comparer;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
+            AddStore(new InMemoryDataStoreBuilder<Product>(comparer: _comparer));
         }
     }
 
     private class SyncContextRegistrar : DataStoreRegistrarBase
     {
+        private readonly SynchronizationContext _syncContext;
+
         public SyncContextRegistrar(SynchronizationContext syncContext)
         {
+            _syncContext = syncContext;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new InMemoryDataStoreBuilder<Product>(
-                synchronizationContext: syncContext));
+                synchronizationContext: _syncContext));
         }
     }
 
     private class AdvancedRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _jsonPath;
+        private readonly IEqualityComparer<Product> _comparer;
+        private readonly SynchronizationContext _syncContext;
+
         public AdvancedRegistrar(
             string jsonPath,
             IEqualityComparer<Product> comparer,
             SynchronizationContext syncContext)
         {
+            _jsonPath = jsonPath;
+            _comparer = comparer;
+            _syncContext = syncContext;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new JsonDataStoreBuilder<Product>(
-                filePath: jsonPath,
-                comparer: comparer,
-                synchronizationContext: syncContext));
+                filePath: _jsonPath,
+                comparer: _comparer,
+                synchronizationContext: _syncContext));
         }
     }
 

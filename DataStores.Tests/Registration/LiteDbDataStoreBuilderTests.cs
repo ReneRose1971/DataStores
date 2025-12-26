@@ -1,7 +1,10 @@
 using DataStores.Abstractions;
+using DataStores.Bootstrap;
 using DataStores.Persistence;
 using DataStores.Registration;
 using DataStores.Runtime;
+using Microsoft.Extensions.DependencyInjection;
+using TestHelper.DataStores.PathProviders;
 
 namespace DataStores.Tests.Registration;
 
@@ -31,6 +34,10 @@ public class LiteDbDataStoreBuilderTests
         public TestRegistrar(LiteDbDataStoreBuilder<TestEntity> builder)
         {
             _builder = builder;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(_builder);
         }
     }
@@ -42,8 +49,12 @@ public class LiteDbDataStoreBuilderTests
             databasePath: "test.db");
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
+        
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        var provider = services.BuildServiceProvider();
 
-        registrar.Register(registry, null!);
+        registrar.Register(registry, provider);
 
         var store = registry.ResolveGlobal<TestEntity>();
         Assert.NotNull(store);
@@ -103,8 +114,12 @@ public class LiteDbDataStoreBuilderTests
             databasePath: "test.db");
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
+        
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        var provider = services.BuildServiceProvider();
 
-        registrar.Register(registry, null!);
+        registrar.Register(registry, provider);
 
         var store = registry.ResolveGlobal<TestEntity>();
         Assert.NotNull(store);
@@ -117,8 +132,12 @@ public class LiteDbDataStoreBuilderTests
             databasePath: "test.db");
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
+        
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        var provider = services.BuildServiceProvider();
 
-        registrar.Register(registry, null!);
+        registrar.Register(registry, provider);
 
         var store = registry.ResolveGlobal<TestEntity>();
         Assert.NotNull(store);

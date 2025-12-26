@@ -56,9 +56,14 @@ public static class PersistenceRegistrationExtensions
         SynchronizationContext? synchronizationContext = null) where T : class
     {
         if (registry == null)
+        {
             throw new ArgumentNullException(nameof(registry));
+        }
+        
         if (string.IsNullOrWhiteSpace(jsonFilePath))
+        {
             throw new ArgumentNullException(nameof(jsonFilePath));
+        }
 
         var strategy = new JsonFilePersistenceStrategy<T>(jsonFilePath, jsonOptions);
         var innerStore = new InMemoryDataStore<T>(comparer, synchronizationContext);
@@ -111,9 +116,14 @@ public static class PersistenceRegistrationExtensions
         SynchronizationContext? synchronizationContext = null) where T : EntityBase
     {
         if (registry == null)
+        {
             throw new ArgumentNullException(nameof(registry));
+        }
+        
         if (string.IsNullOrWhiteSpace(databasePath))
+        {
             throw new ArgumentNullException(nameof(databasePath));
+        }
 
         var strategy = new LiteDbPersistenceStrategy<T>(databasePath, collectionName);
         var innerStore = new InMemoryDataStore<T>(comparer, synchronizationContext);
@@ -165,9 +175,14 @@ public static class PersistenceRegistrationExtensions
         SynchronizationContext? synchronizationContext = null) where T : class
     {
         if (registry == null)
+        {
             throw new ArgumentNullException(nameof(registry));
+        }
+        
         if (strategy == null)
+        {
             throw new ArgumentNullException(nameof(strategy));
+        }
 
         var innerStore = new InMemoryDataStore<T>(comparer, synchronizationContext);
         var persistentStore = new PersistentStoreDecorator<T>(

@@ -1,5 +1,8 @@
+using DataStores.Bootstrap;
 using DataStores.Registration;
 using DataStores.Runtime;
+using Microsoft.Extensions.DependencyInjection;
+using TestHelper.DataStores.PathProviders;
 
 namespace DataStores.Tests.Registration;
 
@@ -19,6 +22,10 @@ public class InMemoryDataStoreBuilderTests
         public TestRegistrar(InMemoryDataStoreBuilder<TestItem> builder)
         {
             _builder = builder;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(_builder);
         }
     }
@@ -29,8 +36,12 @@ public class InMemoryDataStoreBuilderTests
         var builder = new InMemoryDataStoreBuilder<TestItem>();
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
+        
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        var provider = services.BuildServiceProvider();
 
-        registrar.Register(registry, null!);
+        registrar.Register(registry, provider);
 
         var store = registry.ResolveGlobal<TestItem>();
         Assert.NotNull(store);
@@ -44,8 +55,12 @@ public class InMemoryDataStoreBuilderTests
         var builder = new InMemoryDataStoreBuilder<TestItem>(comparer: comparer);
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
+        
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        var provider = services.BuildServiceProvider();
 
-        registrar.Register(registry, null!);
+        registrar.Register(registry, provider);
 
         var store = registry.ResolveGlobal<TestItem>();
         Assert.NotNull(store);
@@ -59,8 +74,12 @@ public class InMemoryDataStoreBuilderTests
             synchronizationContext: syncContext);
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
+        
+        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        var provider = services.BuildServiceProvider();
 
-        registrar.Register(registry, null!);
+        registrar.Register(registry, provider);
 
         var store = registry.ResolveGlobal<TestItem>();
         Assert.NotNull(store);

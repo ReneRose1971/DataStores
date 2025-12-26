@@ -44,11 +44,19 @@ public static class RelationServiceModule
         where TKey : notnull
     {
         if (services == null)
+        {
             throw new ArgumentNullException(nameof(services));
+        }
+        
         if (getParentKey == null)
+        {
             throw new ArgumentNullException(nameof(getParentKey));
+        }
+        
         if (getChildKey == null)
+        {
             throw new ArgumentNullException(nameof(getChildKey));
+        }
 
         services.AddSingleton<IRelationViewService<TParent, TChild, TKey>>(provider =>
         {
@@ -86,9 +94,14 @@ public static class RelationServiceModule
         where TKey : notnull
     {
         if (services == null)
+        {
             throw new ArgumentNullException(nameof(services));
+        }
+        
         if (definition == null)
+        {
             throw new ArgumentNullException(nameof(definition));
+        }
 
         services.AddSingleton<IRelationViewService<TParent, TChild, TKey>>(provider =>
         {

@@ -38,10 +38,14 @@ public class OneToOneRelationView<TParent, TChild>
             var children = _relationView.Children;
             
             if (children.Count == 0)
+            {
                 return null;
+            }
             
             if (children.Count == 1)
+            {
                 return children[0];
+            }
 
             return _policy switch
             {

@@ -3,6 +3,8 @@ using DataStores.Bootstrap;
 using DataStores.Registration;
 using Microsoft.Extensions.DependencyInjection;
 using TestHelper.DataStores.Models;
+using TestHelper.DataStores.PathProviders;
+using TestHelper.DataStores.TestSetup;
 
 namespace DataStores.Tests.Integration;
 
@@ -53,8 +55,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
         await File.WriteAllTextAsync(_testJsonPath, 
             System.Text.Json.JsonSerializer.Serialize(testData));
 
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new JsonNoAutoLoadRegistrar(_testJsonPath));
 
         // Act
@@ -78,8 +79,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
             collection.Insert(new TestEntity { Id = 1, Name = "ShouldNotLoad" });
         }
 
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new LiteDbNoAutoLoadRegistrar(_testDbPath));
 
         // Act
@@ -101,8 +101,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
     public async Task JsonBuilder_WithAutoSaveFalse_Should_NotPersist()
     {
         // Arrange
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new JsonNoAutoSaveRegistrar(_testJsonPath));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -123,8 +122,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
     public async Task LiteDbBuilder_WithAutoSaveFalse_Should_NotPersist()
     {
         // Arrange
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new LiteDbNoAutoSaveRegistrar(_testDbPath));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -149,8 +147,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
     public async Task LiteDbBuilder_Should_UseTypeNameAsCollectionName()
     {
         // Arrange
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new LiteDbOnlyRegistrar(_testDbPath));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -175,8 +172,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
     public async Task LiteDbBuilder_WithMultipleTypes_Should_CreateSeparateCollections()
     {
         // Arrange
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new MultiLiteDbRegistrar(_testDbPath));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -208,8 +204,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
     {
         // Arrange
         var comparer = new NameOnlyComparer();
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new ComparerRegistrar(comparer));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -225,7 +220,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
         store.Add(entity1);
         var contains = store.Contains(entity2);
 
-        // Assert: Comparer matches by Name only
+        // Assert: Comparer matches with Name only
         Assert.True(contains);
     }
 
@@ -234,8 +229,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
     {
         // Arrange
         var comparer = new NameOnlyComparer();
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new ComparerRegistrar(comparer));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -261,8 +255,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
     {
         // Arrange
         var comparer = new TestDtoNameComparer();
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new JsonComparerRegistrar(_testJsonPath, comparer));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -291,8 +284,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
     {
         // Arrange
         var syncContext = new TestSynchronizationContext();
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new SyncContextRegistrar(syncContext));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -318,8 +310,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
     {
         // Arrange
         var syncContext = new TestSynchronizationContext();
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(new JsonSyncContextRegistrar(_testJsonPath, syncContext));
 
         _serviceProvider = services.BuildServiceProvider();
@@ -361,8 +352,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
         // Arrange
         var comparer = new NameOnlyComparer();
         var syncContext = new TestSynchronizationContext();
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(
             new CombinedParametersRegistrar(comparer, syncContext));
 
@@ -396,8 +386,7 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
         // Arrange
         var comparer = new TestDtoNameComparer();
         var syncContext = new TestSynchronizationContext();
-        var services = new ServiceCollection();
-        new DataStoresServiceModule().Register(services);
+        var services = DataStoreTestSetup.CreateTestServices();
         services.AddDataStoreRegistrar(
             new JsonAllParametersRegistrar(_testJsonPath, comparer, syncContext));
 
@@ -431,10 +420,17 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
 
     private class JsonNoAutoLoadRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _jsonPath;
+
         public JsonNoAutoLoadRegistrar(string jsonPath)
         {
+            _jsonPath = jsonPath;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new JsonDataStoreBuilder<TestDto>(
-                filePath: jsonPath,
+                filePath: _jsonPath,
                 autoLoad: false,
                 autoSave: true));
         }
@@ -442,10 +438,17 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
 
     private class LiteDbNoAutoLoadRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _dbPath;
+
         public LiteDbNoAutoLoadRegistrar(string dbPath)
         {
+            _dbPath = dbPath;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new LiteDbDataStoreBuilder<TestEntity>(
-                databasePath: dbPath,
+                databasePath: _dbPath,
                 autoLoad: false,
                 autoSave: true));
         }
@@ -453,10 +456,17 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
 
     private class JsonNoAutoSaveRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _jsonPath;
+
         public JsonNoAutoSaveRegistrar(string jsonPath)
         {
+            _jsonPath = jsonPath;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new JsonDataStoreBuilder<TestDto>(
-                filePath: jsonPath,
+                filePath: _jsonPath,
                 autoLoad: false,
                 autoSave: false));
         }
@@ -464,10 +474,17 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
 
     private class LiteDbNoAutoSaveRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _dbPath;
+
         public LiteDbNoAutoSaveRegistrar(string dbPath)
         {
+            _dbPath = dbPath;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new LiteDbDataStoreBuilder<TestEntity>(
-                databasePath: dbPath,
+                databasePath: _dbPath,
                 autoLoad: false,
                 autoSave: false));
         }
@@ -475,83 +492,149 @@ public class BuilderPattern_Advanced_IntegrationTests : IAsyncLifetime
 
     private class LiteDbOnlyRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _dbPath;
+
         public LiteDbOnlyRegistrar(string dbPath)
         {
-            AddStore(new LiteDbDataStoreBuilder<TestEntity>(databasePath: dbPath));
+            _dbPath = dbPath;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
+            AddStore(new LiteDbDataStoreBuilder<TestEntity>(databasePath: _dbPath));
         }
     }
 
     private class MultiLiteDbRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _dbPath;
+
         public MultiLiteDbRegistrar(string dbPath)
         {
-            AddStore(new LiteDbDataStoreBuilder<TestEntity>(databasePath: dbPath));
-            AddStore(new LiteDbDataStoreBuilder<OrderEntity>(databasePath: dbPath));
+            _dbPath = dbPath;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
+            AddStore(new LiteDbDataStoreBuilder<TestEntity>(databasePath: _dbPath));
+            AddStore(new LiteDbDataStoreBuilder<OrderEntity>(databasePath: _dbPath));
         }
     }
 
     private class ComparerRegistrar : DataStoreRegistrarBase
     {
+        private readonly IEqualityComparer<SimpleEntity> _comparer;
+
         public ComparerRegistrar(IEqualityComparer<SimpleEntity> comparer)
         {
-            AddStore(new InMemoryDataStoreBuilder<SimpleEntity>(comparer: comparer));
+            _comparer = comparer;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
+            AddStore(new InMemoryDataStoreBuilder<SimpleEntity>(comparer: _comparer));
         }
     }
 
     private class JsonComparerRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _jsonPath;
+        private readonly IEqualityComparer<TestDto> _comparer;
+
         public JsonComparerRegistrar(string jsonPath, IEqualityComparer<TestDto> comparer)
         {
+            _jsonPath = jsonPath;
+            _comparer = comparer;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new JsonDataStoreBuilder<TestDto>(
-                filePath: jsonPath,
-                comparer: comparer));
+                filePath: _jsonPath,
+                comparer: _comparer));
         }
     }
 
     private class SyncContextRegistrar : DataStoreRegistrarBase
     {
+        private readonly SynchronizationContext _syncContext;
+
         public SyncContextRegistrar(SynchronizationContext syncContext)
         {
+            _syncContext = syncContext;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new InMemoryDataStoreBuilder<SimpleEntity>(
-                synchronizationContext: syncContext));
+                synchronizationContext: _syncContext));
         }
     }
 
     private class JsonSyncContextRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _jsonPath;
+        private readonly SynchronizationContext _syncContext;
+
         public JsonSyncContextRegistrar(string jsonPath, SynchronizationContext syncContext)
         {
+            _jsonPath = jsonPath;
+            _syncContext = syncContext;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new JsonDataStoreBuilder<TestDto>(
-                filePath: jsonPath,
-                synchronizationContext: syncContext));
+                filePath: _jsonPath,
+                synchronizationContext: _syncContext));
         }
     }
 
     private class CombinedParametersRegistrar : DataStoreRegistrarBase
     {
+        private readonly IEqualityComparer<SimpleEntity> _comparer;
+        private readonly SynchronizationContext _syncContext;
+
         public CombinedParametersRegistrar(
             IEqualityComparer<SimpleEntity> comparer,
             SynchronizationContext syncContext)
         {
+            _comparer = comparer;
+            _syncContext = syncContext;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new InMemoryDataStoreBuilder<SimpleEntity>(
-                comparer: comparer,
-                synchronizationContext: syncContext));
+                comparer: _comparer,
+                synchronizationContext: _syncContext));
         }
     }
 
     private class JsonAllParametersRegistrar : DataStoreRegistrarBase
     {
+        private readonly string _jsonPath;
+        private readonly IEqualityComparer<TestDto> _comparer;
+        private readonly SynchronizationContext _syncContext;
+
         public JsonAllParametersRegistrar(
             string jsonPath,
             IEqualityComparer<TestDto> comparer,
             SynchronizationContext syncContext)
         {
+            _jsonPath = jsonPath;
+            _comparer = comparer;
+            _syncContext = syncContext;
+        }
+
+        protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
+        {
             AddStore(new JsonDataStoreBuilder<TestDto>(
-                filePath: jsonPath,
+                filePath: _jsonPath,
                 autoLoad: true,
                 autoSave: true,
-                comparer: comparer,
-                synchronizationContext: syncContext));
+                comparer: _comparer,
+                synchronizationContext: _syncContext));
         }
     }
 
