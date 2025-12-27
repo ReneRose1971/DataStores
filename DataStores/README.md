@@ -5,17 +5,17 @@ Eine moderne .NET 8 Bibliothek für die Verwaltung von typsicheren In-Memory-Dat
 ## Inhaltsverzeichnis
 
 - [Übersicht](#übersicht)
-- [Usage Contract (verbindlich)](#usage-contract-verbindlich)
-- [Installation](#installation)
 - [Schnellstart](#schnellstart)
-- [Application Startup Flow](#application-startup-flow)
+- [Bootstrap-Konzept](#bootstrap-konzept)
 - [Kernkonzepte](#kernkonzepte)
+- [Lokale InMemoryDataStore-Kopien](#lokale-inmemorydatastore-kopien)
+- [Installation](#installation)
 - [Dokumentation](#dokumentation)
 - [Beispiele](#beispiele)
 
 ## Übersicht
 
-DataStores ist eine leistungsstarke Bibliothek, die eine flexible und typsichere Verwaltung von In-Memory-Datensammlungen ermöglicht. Sie vereinfacht die Arbeit mit Daten in modernen .NET-Anwendungen durch:
+DataStores ist eine leistungsstarke Bibliothek, die eine flexible und typsichere Verwaltung von In-Memory-Datensammlungen ermöglicht. Sie vereinfacht die Arbeit mit Daten in modernen .NET-Anwendungen.
 
 ### Hauptmerkmale
 
@@ -30,153 +30,9 @@ DataStores ist eine leistungsstarke Bibliothek, die eine flexible und typsichere
 - **Bulk-Operationen**: AddRange für performante Massen-Operationen
 - **Flexible Filter**: Snapshots mit Prädikaten und Custom Comparers
 
-## Usage Contract (verbindlich)
-
-### MUST: Zugriff ausschließlich über IDataStores
-
-- **Application code MUST access stores ONLY via `IDataStores` facade**
-- Use `IDataStores.GetGlobal<T>()` for global stores
-- Use `IDataStores.CreateLocal<T>()` for local stores
-- NEVER directly instantiate `InMemoryDataStore<T>`, `PersistentStoreDecorator<T>`, or other store types in application code
-
-### MUST: Registration nur via IDataStoreRegistrar
-
-- **Registration MUST occur ONLY within `IDataStoreRegistrar.Register()` implementations**
-- Register stores during startup before first access
-- Do NOT resolve or access stores within the Register method
-- Use `ServiceCollectionExtensions.AddDataStoreRegistrar<T>()` to register registrars
-
-### MUST: Bootstrap vor erster Nutzung
-
-- **`DataStoreBootstrap.RunAsync()` MUST be executed once during application startup**
-- Call after building the service provider
-- Do NOT call from feature code, viewmodels, or services
-
-### MUST NOT: Direkte Nutzung von Infrastruktur-Komponenten
-
-- **Application code MUST NOT depend on infrastructure types**:
-  - `IGlobalStoreRegistry` / `GlobalStoreRegistry`
-  - `ILocalDataStoreFactory` / `LocalDataStoreFactory`
-  - Direct instantiation of decorators or store implementations
-- These types are for internal framework use only
-- Bypassing the facade prevents proper lifecycle and initialization
-
-### Anti-Patterns (NEVER do this)
-
-❌ **WRONG: Direct store instantiation in application code**
-```csharp
-// NEVER do this in feature code
-var store = new InMemoryDataStore<Product>();
-var store = new PersistentStoreDecorator<Product>(...);
-```
-
-❌ **WRONG: Direct registry access in application code**
-```csharp
-// NEVER do this in feature code
-var registry = serviceProvider.GetRequiredService<IGlobalStoreRegistry>();
-var store = registry.ResolveGlobal<Product>();
-```
-
-❌ **WRONG: Store access in registrar**
-```csharp
-public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
-{
-    registry.RegisterGlobal(new InMemoryDataStore<Product>());
-    // NEVER access stores here
-    var store = registry.ResolveGlobal<Product>(); // WRONG!
-}
-```
-
-✅ **CORRECT: Use IDataStores facade**
-```csharp
-public class ProductService
-{
-    private readonly IDataStores _stores;
-    
-    public ProductService(IDataStores stores)
-    {
-        _stores = stores;
-    }
-    
-    public void AddProduct(Product product)
-    {
-        var store = _stores.GetGlobal<Product>();
-        store.Add(product);
-    }
-}
-```
-
-## Installation
-
-### NuGet Package (wenn veröffentlicht)
-```bash
-dotnet add package DataStores
-```
-
-### Als Projekt-Referenz
-```xml
-<ItemGroup>
-  <ProjectReference Include="..\DataStores\DataStores.csproj" />
-</ItemGroup>
-```
-
 ## Schnellstart
 
-### Option 1: Mit Common.Bootstrap (EMPFOHLEN - Automatisches Scanning)
-
-Der empfohlene Weg nutzt `DataStoresBootstrapDecorator` für automatische Service-Registrierung.
-
-```csharp
-using Common.Bootstrap;
-using DataStores.Bootstrap;
-using Microsoft.Extensions.DependencyInjection;
-
-var services = new ServiceCollection();
-
-// 1. PathProvider registrieren
-var pathProvider = new DataStorePathProvider("MyApp");
-services.AddSingleton<IDataStorePathProvider>(pathProvider);
-
-// 2. DefaultBootstrapWrapper instanziieren
-var defaultWrapper = new DefaultBootstrapWrapper();
-
-// 3. DataStoresBootstrapDecorator instanziieren
-var bootstrap = new DataStoresBootstrapDecorator(defaultWrapper);
-
-// 4. Services aus Assemblies registrieren (automatisches Scanning)
-bootstrap.RegisterServices(
-    services,
-    typeof(DefaultBootstrapWrapper).Assembly,      // Common.Bootstrap
-    typeof(DataStoresBootstrapDecorator).Assembly  // DataStores
-);
-
-// 5. ServiceProvider bauen und Bootstrap ausführen
-var provider = services.BuildServiceProvider();
-await DataStoreBootstrap.RunAsync(provider);
-
-// 6. Stores verwenden
-var stores = provider.GetRequiredService<IDataStores>();
-var productStore = stores.GetGlobal<Product>();
-productStore.Add(new Product { Id = 1, Name = "Laptop" });
-```
-
-**Was wird automatisch registriert:**
-- ✅ **IServiceModule** - Alle Service-Module (z.B. DataStoresServiceModule)
-- ✅ **IEqualityComparer\<T\>** - Custom Equality-Comparer
-- ✅ **IDataStoreRegistrar** - Store-Registrierungen (mit parameterlosem Konstruktor)
-
-**Vorteile:**
-- Automatische Erkennung aller Registrars
-- Keine manuelle Registrierung erforderlich
-- Convention over Configuration
-
----
-
-### Option 2: Manuell (Ohne Common.Bootstrap)
-
-Für Projekte ohne Common.Bootstrap oder mit parametrisierten Registrars.
-
-#### 1. Services registrieren
+### 1. Services registrieren
 
 ```csharp
 using DataStores.Bootstrap;
@@ -184,7 +40,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 var services = new ServiceCollection();
 
-// Registriere DataStores ServiceModule
+// DataStores ServiceModule registrieren
 var module = new DataStoresServiceModule();
 module.Register(services);
 
@@ -194,7 +50,7 @@ services.AddDataStoreRegistrar(new MyAppStoreRegistrar("C:\\Data\\myapp.db"));
 var serviceProvider = services.BuildServiceProvider();
 ```
 
-#### 2. Registrar implementieren (EMPFOHLEN: Builder Pattern)
+### 2. Registrar implementieren
 
 ```csharp
 using DataStores.Registration;
@@ -203,43 +59,28 @@ public class MyAppStoreRegistrar : DataStoreRegistrarBase
 {
     public MyAppStoreRegistrar(string dbPath)
     {
-        // InMemory store (no persistence)
+        // InMemory store (keine Persistierung)
         AddStore(new InMemoryDataStoreBuilder<Product>());
         
-        // JSON store with auto-load and auto-save
+        // JSON store mit Auto-Load und Auto-Save
         AddStore(new JsonDataStoreBuilder<Customer>(
             filePath: "C:\\Data\\customers.json"));
         
-        // LiteDB store (collection name auto-generated from type name)
+        // LiteDB store (Collection-Name wird automatisch aus dem Typnamen generiert)
         AddStore(new LiteDbDataStoreBuilder<Order>(
             databasePath: dbPath));
     }
 }
 ```
 
-**Alternative (mehr Boilerplate):**
-```csharp
-using DataStores.Abstractions;
-using DataStores.Runtime;
-
-public class ProductStoreRegistrar : IDataStoreRegistrar
-{
-    public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
-    {
-        // ONLY register stores here, do NOT access them
-        registry.RegisterGlobal(new InMemoryDataStore<Product>());
-    }
-}
-```
-
-#### 3. Bootstrap ausführen
+### 3. Bootstrap ausführen
 
 ```csharp
-// MUST be called once during startup, after building service provider
+// Einmal beim Anwendungsstart ausführen, nach dem Bauen des Service Providers
 await DataStoreBootstrap.RunAsync(serviceProvider);
 ```
 
-#### 4. Stores verwenden
+### 4. Stores verwenden über IDataStores
 
 ```csharp
 using DataStores.Abstractions;
@@ -255,7 +96,7 @@ public class ProductService
     
     public IReadOnlyList<Product> GetAllProducts()
     {
-        // Access stores via facade ONLY
+        // Zugriff auf Stores erfolgt ausschließlich über IDataStores
         var store = _stores.GetGlobal<Product>();
         return store.Items;
     }
@@ -268,48 +109,96 @@ public class ProductService
 }
 ```
 
-## Application Startup Flow
+## Bootstrap-Konzept
 
-The DataStores framework follows a strict 5-step initialization sequence:
+### Trennung von Konfiguration und Laufzeit
 
-### Step 1: DI Container Setup
+Die DataStores-Bibliothek folgt einem strikten Separationsprinzip zwischen Bootstrap-Phase und Laufzeit-Phase.
+
+#### Bootstrap-Phase (Anwendungsstart)
+
+In der Bootstrap-Phase wird festgelegt, welche Art von Datenquelle für einen bestimmten Typ `T` existiert. Dies geschieht durch Implementierung eines `IDataStoreRegistrar`:
+
 ```csharp
-var services = new ServiceCollection();
+public class MyAppStoreRegistrar : DataStoreRegistrarBase
+{
+    public MyAppStoreRegistrar()
+    {
+        // Hier wird festgelegt: Product wird InMemory gespeichert
+        AddStore(new InMemoryDataStoreBuilder<Product>());
+        
+        // Hier wird festgelegt: Customer wird in JSON persistiert
+        AddStore(new JsonDataStoreBuilder<Customer>(
+            filePath: "C:\\Data\\customers.json"));
+    }
+}
 ```
 
-### Step 2: Register ServiceModule
+**Nach dem einmaligen Bootstrap-Aufruf (`DataStoreBootstrap.RunAsync()`) ist die Konfiguration abgeschlossen.**
+
+#### Laufzeit-Phase (Application Code)
+
+Zur Laufzeit arbeitet der Anwendungscode ausschließlich mit den `IDataStore<T>`-Interfaces über die `IDataStores`-Facade:
+
 ```csharp
-// Registers IDataStores, IGlobalStoreRegistry, ILocalDataStoreFactory
-var module = new DataStoresServiceModule();
-module.Register(services);
+public class OrderViewModel
+{
+    private readonly IDataStores _stores;
+    
+    public OrderViewModel(IDataStores stores)
+    {
+        _stores = stores;
+    }
+    
+    public void LoadOrders()
+    {
+        // Der Anwendungscode arbeitet nur mit dem IDataStore<Order> Interface
+        // Die konkrete Implementierung (JSON, LiteDB, InMemory) ist transparent
+        var orderStore = _stores.GetGlobal<Order>();
+        var orders = orderStore.Items;
+        
+        // Die Persistierung passiert automatisch im Hintergrund (falls konfiguriert)
+    }
+}
 ```
 
-### Step 3: Register Store Registrars
-```csharp
-// Register your IDataStoreRegistrar implementations
-services.AddDataStoreRegistrar<ProductStoreRegistrar>();
-services.AddDataStoreRegistrar<CustomerStoreRegistrar>();
-```
+**Vorteile dieser Trennung:**
+- **Testbarkeit**: In Tests kann ein InMemory-Store verwendet werden, in Produktion LiteDB
+- **Flexibilität**: Die Persistierungsstrategie kann ohne Änderung des Anwendungscodes gewechselt werden
+- **Single Responsibility**: Bootstrap-Code konfiguriert, Anwendungscode nutzt nur Interfaces
+- **Dependency Injection**: Stores werden über DI bereitgestellt
 
-### Step 4: Build Service Provider
-```csharp
-var serviceProvider = services.BuildServiceProvider();
-```
+### Zugriff ausschließlich über IDataStores
 
-### Step 5: Bootstrap Execution
-```csharp
-// MUST be called before first store access
-await DataStoreBootstrap.RunAsync(serviceProvider);
-```
+Der Zugriff auf alle Stores erfolgt zwingend über die `IDataStores`-Facade. Dies gewährleistet:
+- Konsistenten Zugriff auf globale und lokale Stores
+- Korrekte Initialisierung und Lifecycle-Management
+- Einheitliche API für alle Anwendungsteile
 
-### Step 6: Use via Facade
 ```csharp
-// Now access stores via IDataStores ONLY
-var stores = serviceProvider.GetRequiredService<IDataStores>();
-var productStore = stores.GetGlobal<Product>();
+public class ProductService
+{
+    private readonly IDataStores _stores;
+    
+    public ProductService(IDataStores stores)
+    {
+        _stores = stores; // IDataStores wird per DI injiziert
+    }
+    
+    public void DoSomething()
+    {
+        // Globale Stores
+        var productStore = _stores.GetGlobal<Product>();
+        
+        // Lokale Stores
+        var localStore = _stores.CreateLocal<Product>();
+        
+        // Snapshots
+        var snapshot = _stores.CreateLocalSnapshotFromGlobal<Product>(
+            p => p.IsActive);
+    }
+}
 ```
-
-**Important:** Do NOT skip step 5 (Bootstrap). Accessing stores before bootstrap will throw exceptions.
 
 ## Kernkonzepte
 
@@ -332,19 +221,19 @@ public interface IDataStore<T> where T : class
 
 ### Globale vs. Lokale Stores
 
-**Globale Stores** sind application-wide Singletons:
+**Globale Stores** sind application-wide Singletons, die über die gesamte Anwendung geteilt werden:
 ```csharp
 var globalProducts = stores.GetGlobal<Product>();
 ```
 
-**Lokale Stores** sind isolierte Instanzen:
+**Lokale Stores** sind isolierte Instanzen für spezifische Anwendungsfälle:
 ```csharp
 var localStore = stores.CreateLocal<Product>();
-var filteredStore = stores.CreateLocalSnapshotFromGlobal<Product>(
-    p => p.Category == "Electronics");
 ```
 
 ### Event-System
+
+Alle Stores bieten Änderungsbenachrichtigungen über das `Changed`-Event:
 
 ```csharp
 var store = stores.GetGlobal<Product>();
@@ -369,11 +258,111 @@ store.Changed += (sender, e) =>
 };
 ```
 
+## Lokale InMemoryDataStore-Kopien
+
+### Snapshots von globalen Stores
+
+Sie können lokale, isolierte Kopien von globalen Stores mit allen vorhandenen Daten erstellen. Dies ist besonders nützlich für:
+- **Dialog-Szenarien**: Bearbeitung mit Abbrechen/Speichern
+- **Temporäre Filter**: Anzeige einer gefilterten Teilmenge
+- **Isolierte Tests**: Unabhängige Test-Daten
+
+### Vollständige Kopie erstellen
+
+```csharp
+// Erstelle eine lokale Kopie mit ALLEN Daten aus dem globalen Store
+var localStore = stores.CreateLocalSnapshotFromGlobal<Product>();
+
+// localStore enthält jetzt alle Produkte aus dem globalen Store
+// Änderungen am localStore beeinflussen nicht den globalen Store
+localStore.Add(new Product { Name = "Neues Produkt" });
+
+// Der globale Store bleibt unverändert
+var globalStore = stores.GetGlobal<Product>();
+```
+
+### Gefilterte Kopie erstellen
+
+```csharp
+// Erstelle eine lokale Kopie mit nur den aktiven Produkten
+var activeProductsStore = stores.CreateLocalSnapshotFromGlobal<Product>(
+    p => p.IsActive);
+
+// activeProductsStore enthält nur Produkte mit IsActive == true
+// Änderungen sind isoliert
+```
+
+### Verwendungsbeispiel: Edit-Dialog mit Abbrechen
+
+```csharp
+public class EditProductDialogViewModel
+{
+    private readonly IDataStores _stores;
+    private IDataStore<Product> _editStore;
+    
+    public EditProductDialogViewModel(IDataStores stores)
+    {
+        _stores = stores;
+    }
+    
+    public void Initialize()
+    {
+        // Lokale Kopie für die Bearbeitung
+        _editStore = _stores.CreateLocalSnapshotFromGlobal<Product>();
+    }
+    
+    public void Save()
+    {
+        // Änderungen in den globalen Store übernehmen
+        var globalStore = _stores.GetGlobal<Product>();
+        globalStore.Clear();
+        globalStore.AddRange(_editStore.Items);
+    }
+    
+    public void Cancel()
+    {
+        // Einfach den lokalen Store verwerfen
+        _editStore = null;
+        // Globaler Store bleibt unverändert
+    }
+}
+```
+
+### Wichtig: Keine automatische Synchronisation
+
+Lokale Snapshots sind eigenständige Kopien:
+- Änderungen am lokalen Store beeinflussen nicht den globalen Store
+- Änderungen am globalen Store werden nicht automatisch im lokalen Store reflektiert
+- Für bidirektionale Synchronisation müssen Sie manuell die Daten kopieren
+
+```csharp
+// Lokalen Store erstellen
+var localStore = stores.CreateLocalSnapshotFromGlobal<Product>();
+
+// Änderung am globalen Store
+var globalStore = stores.GetGlobal<Product>();
+globalStore.Add(new Product { Name = "Global Produkt" });
+
+// localStore bleibt unverändert (keine automatische Synchronisation)
+// Um den lokalen Store zu aktualisieren, einen neuen Snapshot erstellen:
+localStore = stores.CreateLocalSnapshotFromGlobal<Product>();
+```
+
+## Installation
+
+### NuGet Package (wenn veröffentlicht)
+```bash
+dotnet add package DataStores
+```
+
+### Als Projekt-Referenz
+```xml
+<ItemGroup>
+  <ProjectReference Include="..\DataStores\DataStores.csproj" />
+</ItemGroup>
+```
+
 ## Dokumentation
-
-### Hauptdokumentation
-
-- **[DataStores.md](../DataStores.md)** - **Vollständiger Bootstrap-Prozess** mit Common.Bootstrap Integration
 
 ### Detaillierte Guides
 
@@ -384,12 +373,10 @@ store.Changed += (sender, e) =>
 - **[Beziehungen Guide](Docs/Relations-Guide.md)** - Eltern-Kind-Beziehungen
 - **[LiteDB Integration](Docs/LiteDB-Integration.md)** - LiteDB-Persistierung
 - **[Registrar Best Practices](Docs/Registrar-Best-Practices.md)** - Registrar-Patterns
-- **[Assembly Scanning Guide](Docs/Assembly-Scanning-Guide.md)** - Automatische Registrar-Erkennung
-- **[DataStoresBootstrapDecorator Guide](Docs/DataStoresBootstrapDecorator-Guide.md)** - Bootstrap-Decorator Details
 
 ## Beispiele
 
-### Beispiel 1: Einfacher Product Store mit Builder Pattern
+### Beispiel 1: Einfacher Product Store
 
 ```csharp
 public class Product
@@ -409,7 +396,7 @@ public class ProductStoreRegistrar : DataStoreRegistrarBase
     }
 }
 
-// Verwendung
+// Verwendung über IDataStores
 var stores = serviceProvider.GetRequiredService<IDataStores>();
 var productStore = stores.GetGlobal<Product>();
 
@@ -420,15 +407,9 @@ productStore.Add(new Product
     Price = 999.99m,
     IsActive = true 
 });
-
-productStore.AddRange(new[]
-{
-    new Product { Id = 2, Name = "Maus", Price = 29.99m },
-    new Product { Id = 3, Name = "Tastatur", Price = 79.99m }
-});
 ```
 
-### Beispiel 2: Persistenter Store mit JSON (Builder Pattern)
+### Beispiel 2: Persistenter Store mit JSON
 
 ```csharp
 public class JsonProductRegistrar : DataStoreRegistrarBase
@@ -447,33 +428,7 @@ services.AddDataStoreRegistrar(
     new JsonProductRegistrar("C:\\Data\\products.json"));
 ```
 
-**Alternative (alte Methode - mehr Boilerplate):**
-```csharp
-public class JsonProductRegistrar : IDataStoreRegistrar
-{
-    private readonly string _jsonFilePath;
-    
-    public JsonProductRegistrar(string jsonFilePath)
-    {
-        _jsonFilePath = jsonFilePath;
-    }
-    
-    public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
-    {
-        var strategy = new JsonFilePersistenceStrategy<Product>(_jsonFilePath);
-        var innerStore = new InMemoryDataStore<Product>();
-        var persistentStore = new PersistentStoreDecorator<Product>(
-            innerStore,
-            strategy,
-            autoLoad: true,
-            autoSaveOnChange: true);
-            
-        registry.RegisterGlobal(persistentStore);
-    }
-}
-```
-
-### Beispiel 3: LiteDB-Persistierung mit EntityBase (Builder Pattern)
+### Beispiel 3: LiteDB-Persistierung
 
 ```csharp
 public class Order : EntityBase
@@ -487,73 +442,43 @@ public class LiteDbOrderRegistrar : DataStoreRegistrarBase
 {
     public LiteDbOrderRegistrar(string dbPath)
     {
-        // Collection name is automatically "Order" (from typeof(Order).Name)
+        // Collection-Name wird automatisch "Order" (aus typeof(Order).Name)
         AddStore(new LiteDbDataStoreBuilder<Order>(
             databasePath: dbPath,
             autoLoad: true,
             autoSave: true));
     }
 }
-
-// Startup
-services.AddDataStoreRegistrar(
-    new LiteDbOrderRegistrar("C:\\Data\\myapp.db"));
 ```
 
-**Alternative (alte Methode - mehr Boilerplate):**
-```csharp
-public class LiteDbOrderRegistrar : IDataStoreRegistrar
-{
-    private readonly string _dbPath;
-    
-    public LiteDbOrderRegistrar(string dbPath)
-    {
-        _dbPath = dbPath;
-    }
-    
-    public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
-    {
-        var strategy = new LiteDbPersistenceStrategy<Order>(_dbPath, "orders");
-        var innerStore = new InMemoryDataStore<Order>();
-        var persistentStore = new PersistentStoreDecorator<Order>(
-            innerStore,
-            strategy,
-            autoLoad: true,
-            autoSaveOnChange: true);
-            
-        registry.RegisterGlobal(persistentStore);
-    }
-}
-```
-
-### Beispiel 4: Multi-Store Registrar mit verschiedenen Strategien
+### Beispiel 4: Multi-Store Registrar
 
 ```csharp
 public class MultiStoreRegistrar : DataStoreRegistrarBase
 {
     public MultiStoreRegistrar(string dbPath)
     {
-        // InMemory: Temporary data, no persistence
+        // InMemory: Temporäre Daten, keine Persistierung
         AddStore(new InMemoryDataStoreBuilder<Product>());
         
-        // JSON: Configuration and settings
+        // JSON: Konfiguration und Einstellungen
         AddStore(new JsonDataStoreBuilder<Settings>(
             filePath: "C:\\Data\\settings.json",
             autoLoad: true,
-            autoSave: false)); // Read-only
+            autoSave: false));
         
-        // LiteDB: Business entities with persistence
+        // LiteDB: Business-Entities mit Persistierung
         AddStore(new LiteDbDataStoreBuilder<Order>(
             databasePath: dbPath));
         
         AddStore(new LiteDbDataStoreBuilder<Customer>(
             databasePath: dbPath));
         
-        // With custom comparer
+        // Mit Custom Comparer
         AddStore(new InMemoryDataStoreBuilder<Category>(
             comparer: new CategoryIdComparer()));
         
-        // With UI-thread event marshalling (WPF)
+        // Mit UI-Thread Event-Marshalling (WPF)
         AddStore(new JsonDataStoreBuilder<UserPreferences>(
             filePath: "C:\\Data\\preferences.json",
             synchronizationContext: SynchronizationContext.Current));
@@ -597,71 +522,21 @@ public class CategoryProductService
 
 ```
 DataStores/
-├── Abstractions/
-│   ├── IDataStore.cs
-│   ├── IDataStores.cs
-│   ├── IGlobalStoreRegistry.cs
-│   ├── IDataStoreRegistrar.cs
-│   └── DataStoreChangedEventArgs.cs
-│
-├── Runtime/
-│   ├── InMemoryDataStore.cs
-│   ├── DataStoresFacade.cs
-│   ├── GlobalStoreRegistry.cs
-│   └── LocalDataStoreFactory.cs
-│
-├── Persistence/
-│   ├── IPersistenceStrategy.cs
-│   ├── PersistentStoreDecorator.cs
-│   ├── JsonFilePersistenceStrategy.cs
-│   └── LiteDbPersistenceStrategy.cs
-│
-├── Relations/
-│   ├── ParentChildRelationship.cs
-│   └── IParentChildRelationService.cs
-│
-├── Bootstrap/
-│   ├── DataStoreBootstrap.cs
-│   ├── ServiceCollectionExtensions.cs
-│   └── DataStoresServiceModule.cs
-│
-└── Docs/
-    ├── API-Reference.md
-    ├── Formal-Specifications.md
-    ├── Usage-Examples.md
-    ├── Persistence-Guide.md
-    ├── Relations-Guide.md
-    ├── LiteDB-Integration.md
-    └── Registrar-Best-Practices.md
+├── Abstractions/          # Interfaces und Basisklassen
+├── Runtime/               # Laufzeit-Implementierungen
+├── Persistence/           # Persistierungs-Funktionalität
+├── Relations/             # Eltern-Kind-Beziehungen
+├── Bootstrap/             # Initialisierung und DI
+├── Registration/          # Builder-Pattern für Store-Registrierung
+└── Docs/                  # Ausführliche Dokumentation
 ```
 
 ## Anforderungen
 
 - .NET 8.0 oder höher
 - Microsoft.Extensions.DependencyInjection.Abstractions 10.0.1+
-- **Common.Bootstrap** (empfohlen für automatisches Scanning)
 - LiteDB 5.0.21+ (optional, für LiteDB-Persistierung)
 - System.Text.Json (enthalten in .NET 8)
-
-## Schnellreferenz: Bootstrap-Optionen
-
-### Mit Common.Bootstrap (Automatisch)
-```csharp
-// Automatisches Scanning aller IServiceModule, IEqualityComparer<T>, IDataStoreRegistrar
-var bootstrap = new DataStoresBootstrapDecorator(new DefaultBootstrapWrapper());
-bootstrap.RegisterServices(services, 
-    typeof(DefaultBootstrapWrapper).Assembly,
-    typeof(DataStoresBootstrapDecorator).Assembly);
-```
-
-### Ohne Common.Bootstrap (Manuell)
-```csharp
-// Manuelle Registrierung
-new DataStoresServiceModule().Register(services);
-services.AddDataStoreRegistrar(new MyRegistrar());
-```
-
-**Siehe [DataStores.md](../DataStores.md) für vollständige Details zum Bootstrap-Prozess.**
 
 ## Beitragen
 
