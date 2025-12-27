@@ -4,6 +4,7 @@ using DataStores.Persistence;
 using DataStores.Registration;
 using DataStores.Runtime;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelper.DataStores.Fakes;
 using TestHelper.DataStores.PathProviders;
 
 namespace DataStores.Tests.Registration;
@@ -19,12 +20,23 @@ public class LiteDbDataStoreBuilderTests
 
         public override bool Equals(object? obj)
         {
-            if (obj is not TestEntity other) return false;
-            if (Id > 0 && other.Id > 0) return Id == other.Id;
+            if (obj is not TestEntity other)
+            {
+                return false;
+            }
+
+            if (Id > 0 && other.Id > 0)
+            {
+                return Id == other.Id;
+            }
+
             return ReferenceEquals(this, other);
         }
 
-        public override int GetHashCode() => Id > 0 ? Id : HashCode.Combine(Name);
+        public override int GetHashCode()
+        {
+            return Id > 0 ? Id : HashCode.Combine(Name);
+        }
     }
 
     private class TestRegistrar : DataStoreRegistrarBase
@@ -42,6 +54,20 @@ public class LiteDbDataStoreBuilderTests
         }
     }
 
+    private static IServiceProvider CreateServiceProvider()
+    {
+        var services = new ServiceCollection();
+        
+        // Register DataStoresServiceModule to get all required services
+        var module = new DataStoresServiceModule();
+        module.Register(services);
+        
+        // Override with test-specific implementations
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        
+        return services.BuildServiceProvider();
+    }
+
     [Fact]
     public void Register_Should_CreatePersistentStoreWithLiteDbStrategy()
     {
@@ -49,10 +75,7 @@ public class LiteDbDataStoreBuilderTests
             databasePath: "test.db");
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
-        
-        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
-        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
-        var provider = services.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         registrar.Register(registry, provider);
 
@@ -114,10 +137,7 @@ public class LiteDbDataStoreBuilderTests
             databasePath: "test.db");
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
-        
-        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
-        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
-        var provider = services.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         registrar.Register(registry, provider);
 
@@ -132,10 +152,7 @@ public class LiteDbDataStoreBuilderTests
             databasePath: "test.db");
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
-        
-        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
-        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
-        var provider = services.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         registrar.Register(registry, provider);
 

@@ -24,8 +24,17 @@ public abstract class DataStoreBuilder<T> where T : class
     /// Gets the optional equality comparer for items in the store.
     /// </summary>
     /// <remarks>
-    /// Used by InMemoryDataStore for Contains and Remove operations.
-    /// If null, EqualityComparer&lt;T&gt;.Default is used.
+    /// <para>
+    /// Used by InMemoryDataStore for Contains, Remove, and duplicate detection.
+    /// </para>
+    /// <para>
+    /// If null, the comparer is resolved automatically via <see cref="IEqualityComparerService"/>:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>EntityBase types → EntityIdComparer (ID-based)</description></item>
+    /// <item><description>Registered custom comparer → From DI container</description></item>
+    /// <item><description>Fallback → EqualityComparer&lt;T&gt;.Default</description></item>
+    /// </list>
     /// </remarks>
     protected IEqualityComparer<T>? Comparer { get; init; }
 
@@ -51,9 +60,16 @@ public abstract class DataStoreBuilder<T> where T : class
     /// Registers the data store with the global registry.
     /// </summary>
     /// <param name="registry">The global store registry.</param>
+    /// <param name="serviceProvider">The service provider for resolving dependencies (e.g., IEqualityComparerService).</param>
     /// <remarks>
+    /// <para>
     /// This method is called internally by <see cref="DataStoreRegistrarBase"/> during startup.
     /// Each builder implements its own registration logic (InMemory, JSON, LiteDB, etc.).
+    /// </para>
+    /// <para>
+    /// The serviceProvider is used to resolve <see cref="IEqualityComparerService"/> for automatic
+    /// comparer resolution when <see cref="Comparer"/> is null.
+    /// </para>
     /// </remarks>
-    internal abstract void Register(IGlobalStoreRegistry registry);
+    internal abstract void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider);
 }

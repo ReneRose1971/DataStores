@@ -185,17 +185,18 @@ public class InMemoryDataStore_EdgeCaseTests
     }
 
     [Fact]
-    public void AddRange_WithDuplicates_Should_AddAll()
+    public void AddRange_WithDuplicates_Should_ThrowException()
     {
         // Arrange
         var store = new InMemoryDataStore<TestItem>();
         var item = new TestItem { Id = 1, Name = "A" };
 
-        // Act
-        store.AddRange(new[] { item, item, item });
+        // Act & Assert - NEW BEHAVIOR: Duplicate prevention in AddRange
+        Assert.Throws<InvalidOperationException>(() => 
+            store.AddRange(new[] { item, item, item }));
 
-        // Assert
-        Assert.Equal(3, store.Items.Count);
+        // Store should be empty (transaction failed)
+        Assert.Empty(store.Items);
     }
 
     private class TestItem
@@ -208,11 +209,22 @@ public class InMemoryDataStore_EdgeCaseTests
     {
         public bool Equals(TestItem? x, TestItem? y)
         {
-            if (x == null && y == null) return true;
-            if (x == null || y == null) return false;
+            if (x == null && y == null)
+            {
+                return true;
+            }
+
+            if (x == null || y == null)
+            {
+                return false;
+            }
+
             return x.Id == y.Id;
         }
 
-        public int GetHashCode(TestItem obj) => obj.Id.GetHashCode();
+        public int GetHashCode(TestItem obj)
+        {
+            return obj.Id.GetHashCode();
+        }
     }
 }

@@ -1,5 +1,6 @@
 using DataStores.Abstractions;
 using DataStores.Runtime;
+using TestHelper.DataStores.Fakes;
 using Xunit;
 
 namespace DataStores.Tests.Runtime;
@@ -9,13 +10,18 @@ namespace DataStores.Tests.Runtime;
 /// </summary>
 public class DataStoresFacade_ErrorHandlingTests
 {
+    private static DataStoresFacade CreateFacade(IGlobalStoreRegistry registry, ILocalDataStoreFactory factory)
+    {
+        return new DataStoresFacade(registry, factory, new FakeEqualityComparerService());
+    }
+
     [Fact]
     public void GetGlobal_MissingStore_Should_ThrowWithTypeName()
     {
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
 
         // Act & Assert
         var ex = Assert.Throws<GlobalStoreNotRegisteredException>(() =>
@@ -31,7 +37,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
 
         // Act
         var local = facade.CreateLocal<TestItem>(comparer: null);
@@ -51,7 +57,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
 
         // Act & Assert
         Assert.Throws<GlobalStoreNotRegisteredException>(() =>
@@ -64,7 +70,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         
         var globalStore = new InMemoryDataStore<TestItem>();
         globalStore.AddRange(new[]
@@ -87,10 +93,11 @@ public class DataStoresFacade_ErrorHandlingTests
     {
         // Arrange
         var factory = new LocalDataStoreFactory();
+        var comparerService = new FakeEqualityComparerService();
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            new DataStoresFacade(null!, factory));
+            new DataStoresFacade(null!, factory, comparerService));
     }
 
     [Fact]
@@ -98,10 +105,11 @@ public class DataStoresFacade_ErrorHandlingTests
     {
         // Arrange
         var registry = new GlobalStoreRegistry();
+        var comparerService = new FakeEqualityComparerService();
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            new DataStoresFacade(registry, null!));
+            new DataStoresFacade(registry, null!, comparerService));
     }
 
     [Fact]
@@ -110,7 +118,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         
         var store1 = new InMemoryDataStore<TestItem>();
         var store2 = new InMemoryDataStore<OtherTestItem>();
@@ -134,7 +142,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
 
         // Act
         var local1 = facade.CreateLocal<TestItem>();
@@ -155,7 +163,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         
         var globalStore = new InMemoryDataStore<TestItem>();
         globalStore.Add(new TestItem { Id = 1, Name = "Item1" });
@@ -179,7 +187,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         
         var globalStore = new InMemoryDataStore<TestItem>();
         globalStore.AddRange(new[]
@@ -209,7 +217,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         
         var globalStore = new InMemoryDataStore<TestItem>();
         globalStore.AddRange(new[]
@@ -236,7 +244,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         
         var comparer = new IdOnlyComparer();
 
@@ -254,7 +262,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         
         var globalStore = new InMemoryDataStore<TestItem>();
         registry.RegisterGlobal(globalStore);
@@ -276,7 +284,7 @@ public class DataStoresFacade_ErrorHandlingTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         
         var globalStore = new InMemoryDataStore<TestItem>();
         registry.RegisterGlobal(globalStore);
@@ -305,11 +313,22 @@ public class DataStoresFacade_ErrorHandlingTests
     {
         public bool Equals(TestItem? x, TestItem? y)
         {
-            if (x == null && y == null) return true;
-            if (x == null || y == null) return false;
+            if (x == null && y == null)
+            {
+                return true;
+            }
+
+            if (x == null || y == null)
+            {
+                return false;
+            }
+
             return x.Id == y.Id;
         }
 
-        public int GetHashCode(TestItem obj) => obj.Id.GetHashCode();
+        public int GetHashCode(TestItem obj)
+        {
+            return obj.Id.GetHashCode();
+        }
     }
 }

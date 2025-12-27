@@ -1,6 +1,8 @@
+using DataStores.Abstractions;
 using DataStores.Persistence;
 using TestHelper.DataStores.Fixtures;
 using TestHelper.DataStores.Models;
+using TestHelper.DataStores.TestSetup;
 using Xunit;
 
 namespace DataStores.Tests.Integration;
@@ -13,6 +15,7 @@ namespace DataStores.Tests.Integration;
 public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<LiteDbPersistenceTempFixture>
 {
     private readonly string _testRoot;
+    private readonly IDataStoreDiffService _diffService = TestDiffServiceFactory.Create();
 
     public LiteDbPersistence_PhysicalFile_IntegrationTests(LiteDbPersistenceTempFixture fixture)
     {
@@ -24,7 +27,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(SaveAllAsync_Should_CreatePhysicalDbFile)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
         var items = new List<TestEntity>
         {
             new() { Id = 0, Name = "Item1" },
@@ -43,7 +46,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(SaveAllAsync_Should_CreateNonEmptyFile)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
         var items = new List<TestEntity>
         {
             new() { Id = 0, Name = "Item1" }
@@ -62,7 +65,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
         // Arrange
         var nestedPath = Path.Combine(_testRoot, nameof(SaveAllAsync_Should_CreateDirectoryIfNotExists), "deep", "folder");
         var dbPath = Path.Combine(nestedPath, "test.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
         var items = new List<TestEntity> { new() { Id = 0, Name = "Test" } };
 
         // Act
@@ -78,7 +81,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
         // Arrange
         var nestedPath = Path.Combine(_testRoot, nameof(SaveAllAsync_Should_CreateFileInNestedDirectory), "deep", "folder");
         var dbPath = Path.Combine(nestedPath, "test.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
         var items = new List<TestEntity> { new() { Id = 0, Name = "Test" } };
 
         // Act
@@ -93,7 +96,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(LoadAllAsync_Should_ReadFromPhysicalDbFile)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
 
         var originalItems = new List<TestEntity>
         {
@@ -102,7 +105,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
         };
 
         await strategy.SaveAllAsync(originalItems);
-        var loadStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var loadStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
 
         // Act
         var loadedItems = await loadStrategy.LoadAllAsync();
@@ -116,7 +119,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(LoadAllAsync_Should_AssignIdsToLoadedItems)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
         var originalItems = new List<TestEntity>
         {
             new() { Id = 0, Name = "Item1" },
@@ -124,7 +127,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
         };
         await strategy.SaveAllAsync(originalItems);
 
-        var loadStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var loadStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
 
         // Act
         var loadedItems = await loadStrategy.LoadAllAsync();
@@ -138,7 +141,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(LoadAllAsync_Should_ReturnEmpty_WhenFileDoesNotExist)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
 
         // Act
         var items = await strategy.LoadAllAsync();
@@ -152,7 +155,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(SaveThenLoad_Should_PersistAllData)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
         var originalItems = new List<TestEntity>
         {
             new() { Id = 0, Name = "Alpha" },
@@ -173,7 +176,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(SaveAllAsync_Should_OverwriteExistingData)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
 
         var firstItems = new List<TestEntity> { new() { Id = 0, Name = "First" } };
         var secondItems = new List<TestEntity>
@@ -197,7 +200,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(SaveAllAsync_Should_NotContainOverwrittenData)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
 
         var firstItems = new List<TestEntity> { new() { Id = 0, Name = "First" } };
         var secondItems = new List<TestEntity> { new() { Id = 0, Name = "Second" } };
@@ -217,7 +220,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(SaveAllAsync_EmptyList_Should_CreateEmptyCollection)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
         var emptyList = new List<TestEntity>();
 
         // Act
@@ -234,8 +237,8 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(MultipleCollections_SameDatabase_Should_BeIndependent)}.db");
 
-        var strategy1 = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "collection1");
-        var strategy2 = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "collection2");
+        var strategy1 = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "collection1", _diffService);
+        var strategy2 = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "collection2", _diffService);
 
         var items1 = new List<TestEntity> { new() { Id = 0, Name = "Collection1" } };
         var items2 = new List<TestEntity> { new() { Id = 0, Name = "Collection2" } };
@@ -257,7 +260,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(SaveAllAsync_LargeDataset_Should_Persist)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
 
         var largeDataset = Enumerable.Range(1, 10000)
             .Select(i => new TestEntity { Id = 0, Name = $"Item{i}" })
@@ -276,13 +279,13 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(DefaultCollectionName_Should_UseTypeName)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath);
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, null, _diffService);
         var items = new List<TestEntity> { new() { Id = 0, Name = "Test" } };
 
         // Act
         await strategy.SaveAllAsync(items);
 
-        var explicitStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, nameof(TestEntity));
+        var explicitStrategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, nameof(TestEntity), _diffService);
         var explicitLoaded = await explicitStrategy.LoadAllAsync();
 
         // Assert
@@ -294,7 +297,7 @@ public class LiteDbPersistence_PhysicalFile_IntegrationTests : IClassFixture<Lit
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(ConcurrentAccess_Should_NotThrow)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "items", _diffService);
 
         // Act
         var tasks = Enumerable.Range(1, 10)

@@ -36,7 +36,7 @@ namespace DataStores.Registration;
 ///     
 ///     protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
 ///     {
-///         // InMemory store (no persistence)
+///         // InMemory store (no persistence) - automatic comparer resolution
 ///         AddStore(new InMemoryDataStoreBuilder&lt;Product&gt;());
 ///         
 ///         // JSON store with auto-load and auto-save
@@ -59,7 +59,7 @@ namespace DataStores.Registration;
 /// </example>
 public abstract class DataStoreRegistrarBase : IDataStoreRegistrar
 {
-    private readonly List<Action<IGlobalStoreRegistry>> _registrations = new();
+    private readonly List<Action<IGlobalStoreRegistry, IServiceProvider>> _registrations = new();
 
     /// <summary>
     /// Registers all configured data stores with the global registry.
@@ -71,7 +71,7 @@ public abstract class DataStoreRegistrarBase : IDataStoreRegistrar
     /// <b>Execution Order:</b>
     /// 1. Resolves <see cref="IDataStorePathProvider"/> from DI
     /// 2. Calls <see cref="ConfigureStores"/> (your implementation)
-    /// 3. Executes all builders added via <see cref="AddStore{T}"/>
+    /// 3. Executes all builders added via <see cref="AddStore{T}"/> (with IServiceProvider for comparer resolution)
     /// 4. Bootstrap initializes persistent stores (auto-load if enabled)
     /// </remarks>
     public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
@@ -82,10 +82,10 @@ public abstract class DataStoreRegistrarBase : IDataStoreRegistrar
         // 2. Let derived class configure stores
         ConfigureStores(serviceProvider, pathProvider);
 
-        // 3. Execute all builder registrations
+        // 3. Execute all builder registrations (with ServiceProvider for comparer resolution)
         foreach (var registration in _registrations)
         {
-            registration(registry);
+            registration(registry, serviceProvider);
         }
     }
 
@@ -107,14 +107,19 @@ public abstract class DataStoreRegistrarBase : IDataStoreRegistrar
     /// <code>
     /// protected override void ConfigureStores(IServiceProvider serviceProvider, IDataStorePathProvider pathProvider)
     /// {
-    ///     // Simple store with path provider
+    ///     // Simple store with automatic comparer resolution
+    ///     AddStore(new InMemoryDataStoreBuilder&lt;Product&gt;());
+    ///     
+    ///     // Store with path provider
     ///     AddStore(new LiteDbDataStoreBuilder&lt;Order&gt;(
     ///         databasePath: pathProvider.FormatLiteDbFileName("myapp")));
     ///     
-    ///     // Advanced: Resolve custom comparer from DI
+    ///     // Advanced: Resolve custom comparer from DI (optional - automatic resolution is preferred)
     ///     var comparer = serviceProvider.GetService&lt;IEqualityComparer&lt;Product&gt;&gt;();
-    ///     AddStore(new InMemoryDataStoreBuilder&lt;Product&gt;(
-    ///         comparer: comparer));
+    ///     if (comparer != null)
+    ///     {
+    ///         AddStore(new InMemoryDataStoreBuilder&lt;Product&gt;(comparer: comparer));
+    ///     }
     /// }
     /// </code>
     /// </example>
@@ -131,11 +136,19 @@ public abstract class DataStoreRegistrarBase : IDataStoreRegistrar
     /// <see cref="JsonDataStoreBuilder{T}"/>, <see cref="LiteDbDataStoreBuilder{T}"/>
     /// </param>
     /// <remarks>
+    /// <para>
     /// Each builder creates the appropriate store type (InMemory, JSON, LiteDB),
     /// applies decorators for persistence if needed, and registers the store with the global registry.
+    /// </para>
+    /// <para>
+    /// Builders automatically resolve IEqualityComparer via IEqualityComparerService when no explicit
+    /// comparer is provided, enabling automatic EntityIdComparer for EntityBase types and
+    /// custom comparer resolution from DI.
+    /// </para>
     /// </remarks>
     protected void AddStore<T>(DataStoreBuilder<T> builder) where T : class
     {
-        _registrations.Add(registry => builder.Register(registry));
+        _registrations.Add((registry, serviceProvider) => 
+            builder.Register(registry, serviceProvider));
     }
 }

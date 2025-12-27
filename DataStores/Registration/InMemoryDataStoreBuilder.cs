@@ -1,5 +1,6 @@
 using DataStores.Abstractions;
 using DataStores.Runtime;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DataStores.Registration;
 
@@ -20,13 +21,23 @@ namespace DataStores.Registration;
 /// <item><description>Data is loaded from external sources at runtime</description></item>
 /// <item><description>Performance is critical and persistence is handled separately</description></item>
 /// </list>
+/// <para>
+/// <b>Automatic Comparer Resolution:</b>
+/// When no explicit comparer is provided, the builder automatically resolves an appropriate
+/// comparer via <see cref="IEqualityComparerService"/>:
+/// </para>
+/// <list type="bullet">
+/// <item><description>EntityBase types → EntityIdComparer (ID-based comparison)</description></item>
+/// <item><description>Types with registered custom comparer → From DI container</description></item>
+/// <item><description>All other types → EqualityComparer&lt;T&gt;.Default</description></item>
+/// </list>
 /// </remarks>
 /// <example>
 /// <code>
-/// // Simple in-memory store
+/// // Simple in-memory store with automatic comparer
 /// AddStore(new InMemoryDataStoreBuilder&lt;Product&gt;());
 /// 
-/// // With custom comparer
+/// // With custom comparer (overrides automatic resolution)
 /// AddStore(new InMemoryDataStoreBuilder&lt;Category&gt;(
 ///     comparer: new CategoryIdComparer()));
 /// 
@@ -42,8 +53,8 @@ public sealed class InMemoryDataStoreBuilder<T> : DataStoreBuilder<T> where T : 
     /// </summary>
     /// <param name="comparer">
     /// Optional equality comparer for items.
-    /// Used for Contains and Remove operations.
-    /// If null, uses EqualityComparer&lt;T&gt;.Default.
+    /// Used for Contains, Remove operations, and duplicate detection.
+    /// If null, comparer is automatically resolved via IEqualityComparerService.
     /// </param>
     /// <param name="synchronizationContext">
     /// Optional synchronization context for event marshalling.
@@ -52,7 +63,7 @@ public sealed class InMemoryDataStoreBuilder<T> : DataStoreBuilder<T> where T : 
     /// </param>
     /// <remarks>
     /// This constructor captures the configuration for the store.
-    /// The actual store is created during the Register phase.
+    /// The actual store is created during the Register phase with automatic comparer resolution.
     /// </remarks>
     public InMemoryDataStoreBuilder(
         IEqualityComparer<T>? comparer = null,
@@ -65,10 +76,20 @@ public sealed class InMemoryDataStoreBuilder<T> : DataStoreBuilder<T> where T : 
     /// <inheritdoc/>
     /// <remarks>
     /// Creates and registers a new <see cref="InMemoryDataStore{T}"/> with the configured parameters.
+    /// If no explicit comparer was provided, automatically resolves an appropriate comparer via
+    /// <see cref="IEqualityComparerService"/>.
     /// </remarks>
-    internal override void Register(IGlobalStoreRegistry registry)
+    internal override void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
     {
-        var store = new InMemoryDataStore<T>(Comparer, SynchronizationContext);
+        // Resolve comparer automatically if not explicitly provided
+        var effectiveComparer = Comparer;
+        if (effectiveComparer == null)
+        {
+            var comparerService = serviceProvider.GetRequiredService<IEqualityComparerService>();
+            effectiveComparer = comparerService.GetComparer<T>();
+        }
+
+        var store = new InMemoryDataStore<T>(effectiveComparer, SynchronizationContext);
         registry.RegisterGlobal(store);
     }
 }

@@ -2,10 +2,12 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using DataStores.Abstractions;
 using DataStores.Persistence;
 using DataStores.Runtime;
 using TestHelper.DataStores.Fixtures;
 using TestHelper.DataStores.Models;
+using TestHelper.DataStores.TestSetup;
 using Xunit;
 
 namespace DataStores.Tests.Integration.Persistence;
@@ -14,6 +16,7 @@ namespace DataStores.Tests.Integration.Persistence;
 public class LiteDbPersistence_PropertyChanged_IntegrationTests : IClassFixture<LiteDbPersistenceTempFixture>
 {
     private readonly string _testRoot;
+    private readonly IDataStoreDiffService _diffService = TestDiffServiceFactory.Create();
 
     public LiteDbPersistence_PropertyChanged_IntegrationTests(LiteDbPersistenceTempFixture fixture)
     {
@@ -25,7 +28,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IClassFixture<
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Create_DbFile_On_Add_When_AutoSaveOnChange_Enabled)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons", _diffService);
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
             innerStore, strategy, autoLoad: false, autoSaveOnChange: true);
@@ -51,7 +54,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IClassFixture<
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Reflect_Remove_On_Save)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons", _diffService);
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
             innerStore, strategy, autoLoad: false, autoSaveOnChange: true);
@@ -85,7 +88,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IClassFixture<
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Save_On_PropertyChanged)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons", _diffService);
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
             innerStore, strategy, autoLoad: false, autoSaveOnChange: true);
@@ -118,7 +121,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IClassFixture<
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Track_Multiple_Items_PropertyChanged)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons", _diffService);
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
             innerStore, strategy, autoLoad: false, autoSaveOnChange: true);
@@ -154,7 +157,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IClassFixture<
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Not_Track_PropertyChanged_After_Remove)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons", _diffService);
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
             innerStore, strategy, autoLoad: false, autoSaveOnChange: true);
@@ -186,7 +189,7 @@ public class LiteDbPersistence_PropertyChanged_IntegrationTests : IClassFixture<
     {
         // Arrange
         var dbPath = Path.Combine(_testRoot, $"{nameof(LiteDbPersistence_Should_Handle_Clear_And_PropertyChanged)}.db");
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(dbPath, "persons", _diffService);
         var innerStore = new InMemoryDataStore<TestEntity>();
         var decorator = new PersistentStoreDecorator<TestEntity>(
             innerStore, strategy, autoLoad: false, autoSaveOnChange: true);

@@ -4,6 +4,7 @@ using DataStores.Runtime;
 using Microsoft.Extensions.DependencyInjection;
 using TestHelper.DataStores.Fixtures;
 using TestHelper.DataStores.Models;
+using TestHelper.DataStores.TestSetup;
 using Xunit;
 
 namespace DataStores.Tests.Integration;
@@ -16,6 +17,7 @@ namespace DataStores.Tests.Integration;
 public class LiteDbDataStore_Fixture_IntegrationTests : IClassFixture<LiteDbDataStore_Fixture_IntegrationTests.LiteDbTestFixture>
 {
     private readonly LiteDbTestFixture _fixture;
+    private readonly IDataStoreDiffService _diffService = TestDiffServiceFactory.Create();
 
     public LiteDbDataStore_Fixture_IntegrationTests(LiteDbTestFixture fixture)
     {
@@ -317,7 +319,7 @@ public class LiteDbDataStore_Fixture_IntegrationTests : IClassFixture<LiteDbData
 
         // Act
         await Task.Delay(200);
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "testentities");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "testentities", _diffService);
         var savedEntities = await strategy.LoadAllAsync();
 
         // Assert
@@ -337,7 +339,7 @@ public class LiteDbDataStore_Fixture_IntegrationTests : IClassFixture<LiteDbData
 
         // Act
         await Task.Delay(200);
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "testentities");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "testentities", _diffService);
         var savedEntities = await strategy.LoadAllAsync();
 
         // Assert
@@ -420,6 +422,7 @@ public class LiteDbDataStore_Fixture_IntegrationTests : IClassFixture<LiteDbData
     public class LiteDbTestFixture : IDisposable
     {
         public string DbPath { get; }
+        private readonly IDataStoreDiffService _diffService = TestDiffServiceFactory.Create();
 
         public LiteDbTestFixture()
         {
@@ -432,7 +435,7 @@ public class LiteDbDataStore_Fixture_IntegrationTests : IClassFixture<LiteDbData
         /// </summary>
         public IDataStore<TestEntity> CreateFreshStore()
         {
-            var strategy = new LiteDbPersistenceStrategy<TestEntity>(DbPath, "testentities");
+            var strategy = new LiteDbPersistenceStrategy<TestEntity>(DbPath, "testentities", _diffService);
             var innerStore = new InMemoryDataStore<TestEntity>();
             var persistentStore = new PersistentStoreDecorator<TestEntity>(
                 innerStore,

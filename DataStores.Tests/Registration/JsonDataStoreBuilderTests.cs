@@ -1,8 +1,10 @@
+using DataStores.Abstractions;
 using DataStores.Bootstrap;
 using DataStores.Persistence;
 using DataStores.Registration;
 using DataStores.Runtime;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelper.DataStores.Fakes;
 using TestHelper.DataStores.PathProviders;
 
 namespace DataStores.Tests.Registration;
@@ -31,6 +33,14 @@ public class JsonDataStoreBuilderTests
         }
     }
 
+    private static IServiceProvider CreateServiceProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        services.AddSingleton<IEqualityComparerService>(new FakeEqualityComparerService());
+        return services.BuildServiceProvider();
+    }
+
     [Fact]
     public void Register_Should_CreatePersistentStoreWithJsonStrategy()
     {
@@ -38,10 +48,7 @@ public class JsonDataStoreBuilderTests
             filePath: "test.json");
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
-        
-        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
-        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
-        var provider = services.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         registrar.Register(registry, provider);
 
@@ -103,10 +110,7 @@ public class JsonDataStoreBuilderTests
             filePath: "test.json");
         var registrar = new TestRegistrar(builder);
         var registry = new GlobalStoreRegistry();
-        
-        var services = new Microsoft.Extensions.DependencyInjection.ServiceCollection();
-        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
-        var provider = services.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         registrar.Register(registry, provider);
 

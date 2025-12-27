@@ -1,6 +1,7 @@
 using DataStores.Abstractions;
 using DataStores.Persistence;
 using DataStores.Runtime;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DataStores.Registration;
 
@@ -115,7 +116,9 @@ public sealed class JsonDataStoreBuilder<T> : DataStoreBuilder<T> where T : clas
         SynchronizationContext? synchronizationContext = null)
     {
         if (string.IsNullOrWhiteSpace(filePath))
+        {
             throw new ArgumentException("File path cannot be null or empty.", nameof(filePath));
+        }
 
         _filePath = filePath;
         _autoLoad = autoLoad;
@@ -132,12 +135,22 @@ public sealed class JsonDataStoreBuilder<T> : DataStoreBuilder<T> where T : clas
     /// </para>
     /// <para>
     /// The decorator handles auto-load and auto-save behavior transparently.
+    /// If no explicit comparer was provided, automatically resolves an appropriate comparer via
+    /// <see cref="IEqualityComparerService"/>.
     /// </para>
     /// </remarks>
-    internal override void Register(IGlobalStoreRegistry registry)
+    internal override void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
     {
+        // Resolve comparer automatically if not explicitly provided
+        var effectiveComparer = Comparer;
+        if (effectiveComparer == null)
+        {
+            var comparerService = serviceProvider.GetRequiredService<IEqualityComparerService>();
+            effectiveComparer = comparerService.GetComparer<T>();
+        }
+
         var strategy = new JsonFilePersistenceStrategy<T>(_filePath);
-        var innerStore = new InMemoryDataStore<T>(Comparer, SynchronizationContext);
+        var innerStore = new InMemoryDataStore<T>(effectiveComparer, SynchronizationContext);
         var decorator = new PersistentStoreDecorator<T>(innerStore, strategy, _autoLoad, _autoSave);
         registry.RegisterGlobal(decorator);
     }

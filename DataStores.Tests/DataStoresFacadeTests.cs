@@ -1,5 +1,6 @@
 using DataStores.Abstractions;
 using DataStores.Runtime;
+using TestHelper.DataStores.Fakes;
 
 namespace DataStores.Tests;
 
@@ -11,12 +12,17 @@ public class DataStoresFacadeTests
         public string Name { get; set; } = string.Empty;
     }
 
+    private static DataStoresFacade CreateFacade(IGlobalStoreRegistry registry, ILocalDataStoreFactory factory)
+    {
+        return new DataStoresFacade(registry, factory, new FakeEqualityComparerService());
+    }
+
     [Fact]
     public void GetGlobal_Should_ReturnSameInstanceAsRegistry()
     {
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         var store = new InMemoryDataStore<TestItem>();
         registry.RegisterGlobal(store);
 
@@ -30,7 +36,7 @@ public class DataStoresFacadeTests
     {
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
 
         Assert.Throws<GlobalStoreNotRegisteredException>(() => facade.GetGlobal<TestItem>());
     }
@@ -40,7 +46,7 @@ public class DataStoresFacadeTests
     {
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
 
         var local1 = facade.CreateLocal<TestItem>();
         var local2 = facade.CreateLocal<TestItem>();
@@ -53,7 +59,7 @@ public class DataStoresFacadeTests
     {
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
 
         var local = facade.CreateLocal<TestItem>();
 
@@ -65,7 +71,7 @@ public class DataStoresFacadeTests
     {
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         var globalStore = new InMemoryDataStore<TestItem>();
         globalStore.Add(new TestItem { Id = 1, Name = "Item1" });
         globalStore.Add(new TestItem { Id = 2, Name = "Item2" });
@@ -81,7 +87,7 @@ public class DataStoresFacadeTests
     {
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         var globalStore = new InMemoryDataStore<TestItem>();
         globalStore.Add(new TestItem { Id = 1, Name = "Item1" });
         registry.RegisterGlobal(globalStore);
@@ -97,7 +103,7 @@ public class DataStoresFacadeTests
     {
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         var globalStore = new InMemoryDataStore<TestItem>();
         globalStore.Add(new TestItem { Id = 1, Name = "Item1" });
         globalStore.Add(new TestItem { Id = 2, Name = "Item2" });
@@ -114,7 +120,7 @@ public class DataStoresFacadeTests
     {
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         var globalStore = new InMemoryDataStore<TestItem>();
         globalStore.Add(new TestItem { Id = 1, Name = "Item1" });
         globalStore.Add(new TestItem { Id = 2, Name = "Item2" });
@@ -129,15 +135,17 @@ public class DataStoresFacadeTests
     public void Constructor_Should_ThrowWhenRegistryIsNull()
     {
         var factory = new LocalDataStoreFactory();
+        var comparerService = new FakeEqualityComparerService();
 
-        Assert.Throws<ArgumentNullException>(() => new DataStoresFacade(null!, factory));
+        Assert.Throws<ArgumentNullException>(() => new DataStoresFacade(null!, factory, comparerService));
     }
 
     [Fact]
     public void Constructor_Should_ThrowWhenFactoryIsNull()
     {
         var registry = new GlobalStoreRegistry();
+        var comparerService = new FakeEqualityComparerService();
 
-        Assert.Throws<ArgumentNullException>(() => new DataStoresFacade(registry, null!));
+        Assert.Throws<ArgumentNullException>(() => new DataStoresFacade(registry, null!, comparerService));
     }
 }

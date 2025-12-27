@@ -8,8 +8,9 @@ namespace DataStores.Runtime;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This class coordinates communication between <see cref="IGlobalStoreRegistry"/> 
-/// and <see cref="ILocalDataStoreFactory"/> to provide a unified API.
+/// This class coordinates communication between <see cref="IGlobalStoreRegistry"/>, 
+/// <see cref="ILocalDataStoreFactory"/>, and <see cref="IEqualityComparerService"/>
+/// to provide a unified API with automatic comparer resolution.
 /// </para>
 /// <para>
 /// Registered as Singleton via <see cref="Bootstrap.DataStoresServiceModule"/>.
@@ -20,20 +21,26 @@ public class DataStoresFacade : IDataStores
 {
     private readonly IGlobalStoreRegistry _registry;
     private readonly ILocalDataStoreFactory _localFactory;
+    private readonly IEqualityComparerService _comparerService;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DataStoresFacade"/> class.
     /// </summary>
     /// <param name="registry">The global store registry for accessing application-wide singleton stores.</param>
     /// <param name="localFactory">The factory for creating isolated local stores.</param>
-    /// <exception cref="ArgumentNullException">Thrown when <paramref name="registry"/> or <paramref name="localFactory"/> is null.</exception>
+    /// <param name="comparerService">The comparer service for automatic comparer resolution.</param>
+    /// <exception cref="ArgumentNullException">Thrown when any parameter is null.</exception>
     /// <remarks>
     /// This constructor is called by dependency injection. Do NOT instantiate directly.
     /// </remarks>
-    public DataStoresFacade(IGlobalStoreRegistry registry, ILocalDataStoreFactory localFactory)
+    public DataStoresFacade(
+        IGlobalStoreRegistry registry, 
+        ILocalDataStoreFactory localFactory,
+        IEqualityComparerService comparerService)
     {
         _registry = registry ?? throw new ArgumentNullException(nameof(registry));
         _localFactory = localFactory ?? throw new ArgumentNullException(nameof(localFactory));
+        _comparerService = comparerService ?? throw new ArgumentNullException(nameof(comparerService));
     }
 
     /// <inheritdoc/>
@@ -51,13 +58,26 @@ public class DataStoresFacade : IDataStores
 
     /// <inheritdoc/>
     /// <remarks>
+    /// <para>
     /// Creates a new, isolated local store that is independent of global stores.
     /// Local stores are useful for temporary data, dialogs, forms, or other
     /// scenarios where isolation is required.
+    /// </para>
+    /// <para>
+    /// <b>Automatic Comparer Resolution:</b>
+    /// If comparer is null, automatically resolves via <see cref="IEqualityComparerService"/>:
+    /// </para>
+    /// <list type="bullet">
+    /// <item><description>EntityBase types → EntityIdComparer</description></item>
+    /// <item><description>Types with registered comparer → From DI</description></item>
+    /// <item><description>Other types → EqualityComparer&lt;T&gt;.Default</description></item>
+    /// </list>
     /// </remarks>
     public IDataStore<T> CreateLocal<T>(IEqualityComparer<T>? comparer = null) where T : class
     {
-        return _localFactory.CreateLocal(comparer);
+        // Automatic comparer resolution when null
+        var effectiveComparer = comparer ?? _comparerService.GetComparer<T>();
+        return _localFactory.CreateLocal(effectiveComparer);
     }
 
     /// <inheritdoc/>
@@ -74,6 +94,10 @@ public class DataStoresFacade : IDataStores
     /// <para>
     /// Changes to the local store do NOT affect the global store.
     /// </para>
+    /// <para>
+    /// <b>Automatic Comparer Resolution:</b>
+    /// If comparer is null, automatically resolves via <see cref="IEqualityComparerService"/>.
+    /// </para>
     /// </remarks>
     /// <exception cref="GlobalStoreNotRegisteredException">
     /// Thrown when no global store is registered for the type <typeparamref name="T"/>.
@@ -83,7 +107,10 @@ public class DataStoresFacade : IDataStores
         IEqualityComparer<T>? comparer = null) where T : class
     {
         var globalStore = _registry.ResolveGlobal<T>();
-        var localStore = _localFactory.CreateLocal(comparer);
+        
+        // Automatic comparer resolution when null
+        var effectiveComparer = comparer ?? _comparerService.GetComparer<T>();
+        var localStore = _localFactory.CreateLocal(effectiveComparer);
 
         var items = predicate == null
             ? globalStore.Items

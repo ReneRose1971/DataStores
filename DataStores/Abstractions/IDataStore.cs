@@ -31,7 +31,7 @@ public interface IDataStore<T> where T : class
     /// Occurs when the data store changes.
     /// </summary>
     /// <remarks>
-    /// Events are raised for Add, AddRange, Remove, and Clear operations.
+    /// Events are raised for Add, AddRange, AddOrReplace, Remove, and Clear operations.
     /// </remarks>
     event EventHandler<DataStoreChangedEventArgs<T>> Changed;
 
@@ -39,14 +39,39 @@ public interface IDataStore<T> where T : class
     /// Adds an item to the store.
     /// </summary>
     /// <param name="item">The item to add.</param>
+    /// <exception cref="InvalidOperationException">Thrown when a duplicate item is detected (based on IEqualityComparer).</exception>
+    /// <remarks>
+    /// <para>
+    /// <b>Duplicate Prevention:</b>
+    /// This method enforces uniqueness. Use <see cref="AddOrReplace"/> for update semantics.
+    /// </para>
+    /// </remarks>
     void Add(T item);
+
+    /// <summary>
+    /// Adds a new item or replaces an existing item with the same identity.
+    /// </summary>
+    /// <param name="item">The item to add or replace.</param>
+    /// <remarks>
+    /// <para>
+    /// If an item with the same identity already exists (according to the IEqualityComparer),
+    /// it is replaced. Otherwise, the item is added.
+    /// </para>
+    /// <para>
+    /// Raises <see cref="Changed"/> event with <see cref="DataStoreChangeType.Update"/> for replacements
+    /// and <see cref="DataStoreChangeType.Add"/> for new items.
+    /// </para>
+    /// </remarks>
+    void AddOrReplace(T item);
 
     /// <summary>
     /// Adds multiple items to the store in a single operation.
     /// </summary>
     /// <param name="items">The items to add.</param>
+    /// <exception cref="InvalidOperationException">Thrown when duplicate items are detected in the batch.</exception>
     /// <remarks>
     /// More efficient than multiple Add calls as it triggers only one Changed event.
+    /// Enforces uniqueness for all items in the batch.
     /// </remarks>
     void AddRange(IEnumerable<T> items);
 

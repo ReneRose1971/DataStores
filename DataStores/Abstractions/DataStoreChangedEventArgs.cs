@@ -14,7 +14,9 @@ public enum DataStoreChangeType
     /// <summary>All items were cleared.</summary>
     Clear,
     /// <summary>The entire collection was reset.</summary>
-    Reset
+    Reset,
+    /// <summary>A single item was updated/replaced.</summary>
+    Update
 }
 
 /// <summary>

@@ -1,5 +1,6 @@
 using DataStores.Abstractions;
 using DataStores.Runtime;
+using TestHelper.DataStores.Fakes;
 using Xunit;
 
 namespace DataStores.Tests.Performance;
@@ -9,6 +10,11 @@ namespace DataStores.Tests.Performance;
 /// </summary>
 public class Performance_StressTests
 {
+    private static DataStoresFacade CreateFacade(IGlobalStoreRegistry registry, ILocalDataStoreFactory factory)
+    {
+        return new DataStoresFacade(registry, factory, new FakeEqualityComparerService());
+    }
+
     [Fact]
     public void InMemoryStore_Add10000Items_Should_BeFast()
     {
@@ -190,7 +196,7 @@ public class Performance_StressTests
         // Arrange
         var registry = new GlobalStoreRegistry();
         var factory = new LocalDataStoreFactory();
-        var facade = new DataStoresFacade(registry, factory);
+        var facade = CreateFacade(registry, factory);
         
         var globalStore = new InMemoryDataStore<TestItem>();
         for (int i = 0; i < 10000; i++)

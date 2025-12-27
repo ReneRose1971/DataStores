@@ -103,6 +103,9 @@ public class PersistentStoreDecorator<T> : IDataStore<T>, IAsyncInitializable, I
     public void Add(T item) => _innerStore.Add(item);
 
     /// <inheritdoc/>
+    public void AddOrReplace(T item) => _innerStore.AddOrReplace(item);
+
+    /// <inheritdoc/>
     public void AddRange(IEnumerable<T> items) => _innerStore.AddRange(items);
 
     /// <inheritdoc/>

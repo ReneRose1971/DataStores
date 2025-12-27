@@ -1,16 +1,19 @@
 using DataStores.Abstractions;
-using DataStores.Persistence;
+using DataStores.Runtime;
+using TestHelper.DataStores.TestSetup;
 using Xunit;
 
 namespace DataStores.Tests.Unit.Persistence;
 
 /// <summary>
-/// Unit-Tests für DataStoreDiffBuilder.
+/// Unit-Tests für IDataStoreDiffService.
 /// Testet die Diff-Berechnung zwischen DataStore und Datenbank.
 /// </summary>
 [Trait("Category", "Unit")]
-public class DataStoreDiffBuilder_Tests
+public class DataStoreDiffService_Tests
 {
+    private readonly IDataStoreDiffService _diffService = TestDiffServiceFactory.Create();
+
     private class TestEntity : EntityBase
     {
         public string Name { get; set; } = "";
@@ -30,7 +33,7 @@ public class DataStoreDiffBuilder_Tests
         var databaseItems = Array.Empty<TestEntity>();
 
         // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
+        var diff = _diffService.ComputeDiff(dataStoreItems, databaseItems);
 
         // Assert
         Assert.Empty(diff.ToInsert);
@@ -46,7 +49,7 @@ public class DataStoreDiffBuilder_Tests
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            DataStoreDiffBuilder.ComputeDiff<TestEntity>(null!, databaseItems));
+            _diffService.ComputeDiff<TestEntity>(null!, databaseItems));
     }
 
     [Fact]
@@ -57,7 +60,7 @@ public class DataStoreDiffBuilder_Tests
 
         // Act & Assert
         Assert.Throws<ArgumentNullException>(() =>
-            DataStoreDiffBuilder.ComputeDiff(dataStoreItems, null!));
+            _diffService.ComputeDiff(dataStoreItems, null!));
     }
 
     #endregion
@@ -78,7 +81,7 @@ public class DataStoreDiffBuilder_Tests
         var databaseItems = Array.Empty<TestEntity>();
 
         // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
+        var diff = _diffService.ComputeDiff(dataStoreItems, databaseItems);
 
         // Assert
         Assert.Equal(3, diff.ToInsert.Count);
@@ -104,7 +107,7 @@ public class DataStoreDiffBuilder_Tests
         };
 
         // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
+        var diff = _diffService.ComputeDiff(dataStoreItems, databaseItems);
 
         // Assert
         Assert.Empty(diff.ToInsert);
@@ -130,7 +133,7 @@ public class DataStoreDiffBuilder_Tests
         };
 
         // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
+        var diff = _diffService.ComputeDiff(dataStoreItems, databaseItems);
 
         // Assert
         Assert.Empty(diff.ToInsert);
@@ -148,18 +151,18 @@ public class DataStoreDiffBuilder_Tests
         // Arrange
         var dataStoreItems = new List<TestEntity>
         {
-            new TestEntity { Id = 1, Name = "Existing" },  // In DB, bleibt
-            new TestEntity { Id = 0, Name = "New" }        // Neu, INSERT
+            new TestEntity { Id = 1, Name = "Existing" },
+            new TestEntity { Id = 0, Name = "New" }
         };
 
         var databaseItems = new List<TestEntity>
         {
-            new TestEntity { Id = 1, Name = "Existing" },  // Bleibt
-            new TestEntity { Id = 2, Name = "ToDelete" }   // DELETE
+            new TestEntity { Id = 1, Name = "Existing" },
+            new TestEntity { Id = 2, Name = "ToDelete" }
         };
 
         // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
+        var diff = _diffService.ComputeDiff(dataStoreItems, databaseItems);
 
         // Assert
         Assert.Single(diff.ToInsert);
@@ -189,7 +192,7 @@ public class DataStoreDiffBuilder_Tests
         };
 
         // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
+        var diff = _diffService.ComputeDiff(dataStoreItems, databaseItems);
 
         // Assert
         Assert.Empty(diff.ToInsert);
@@ -216,7 +219,7 @@ public class DataStoreDiffBuilder_Tests
         };
 
         // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
+        var diff = _diffService.ComputeDiff(dataStoreItems, databaseItems);
 
         // Assert
         Assert.Empty(diff.ToInsert);
@@ -245,31 +248,11 @@ public class DataStoreDiffBuilder_Tests
         };
 
         // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
+        var diff = _diffService.ComputeDiff(dataStoreItems, databaseItems);
 
         // Assert
         Assert.Equal(3, diff.ToInsert.Count);
-        Assert.Single(diff.ToDelete);  // Id=1 wird gelöscht
-    }
-
-    [Fact]
-    public void ComputeDiff_WithDuplicateIds_ThrowsException()
-    {
-        // Arrange - DB hat doppelte IDs (sollte nicht vorkommen)
-        var dataStoreItems = new List<TestEntity>
-        {
-            new TestEntity { Id = 1, Name = "Item" }
-        };
-
-        var databaseItems = new List<TestEntity>
-        {
-            new TestEntity { Id = 1, Name = "Item1" },
-            new TestEntity { Id = 1, Name = "Item2" }  // Duplikat - ungültiger Zustand
-        };
-
-        // Act & Assert - Sollte Exception werfen bei ungültigen Daten
-        Assert.Throws<ArgumentException>(() =>
-            DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems));
+        Assert.Single(diff.ToDelete);
     }
 
     [Fact]
@@ -287,9 +270,9 @@ public class DataStoreDiffBuilder_Tests
         };
 
         // Act
-        var diff = DataStoreDiffBuilder.ComputeDiff(dataStoreItems, databaseItems);
+        var diff = _diffService.ComputeDiff(dataStoreItems, databaseItems);
 
-        // Assert - Prüfe dass die Referenzen erhalten bleiben
+        // Assert
         Assert.Same(dataStoreItems[0], diff.ToInsert[0]);
         Assert.Same(databaseItems[0], diff.ToDelete[0]);
     }

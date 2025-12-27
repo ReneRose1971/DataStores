@@ -18,6 +18,7 @@ namespace DataStores.Bootstrap;
 /// <item><description><see cref="ILocalDataStoreFactory"/> - Factory for local stores (infrastructure only)</description></item>
 /// <item><description><see cref="IDataStores"/> - PRIMARY API facade for application code</description></item>
 /// <item><description><see cref="IEqualityComparerService"/> - Service for automatic comparer resolution</description></item>
+/// <item><description><see cref="IDataStoreDiffService"/> - Service for computing data differences</description></item>
 /// </list>
 /// <para>
 /// Application code MUST use ONLY <see cref="IDataStores"/> after registration.
@@ -51,5 +52,6 @@ public sealed class DataStoresServiceModule : IServiceModule
         services.AddSingleton<ILocalDataStoreFactory, LocalDataStoreFactory>();
         services.AddSingleton<IDataStores, DataStoresFacade>();
         services.AddSingleton<IEqualityComparerService, EqualityComparerService>();
+        services.AddSingleton<IDataStoreDiffService, DataStoreDiffService>();
     }
 }

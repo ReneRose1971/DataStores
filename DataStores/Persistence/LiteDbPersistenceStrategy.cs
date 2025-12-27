@@ -38,6 +38,7 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
 {
     private readonly string _databasePath;
     private readonly string _collectionName;
+    private readonly IDataStoreDiffService _diffService;
     private readonly object _lock = new();
 
     /// <summary>
@@ -48,8 +49,13 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
     /// Der Name der Collection in der Datenbank. 
     /// Wenn null, wird der Typname verwendet.
     /// </param>
+    /// <param name="diffService">Service zur Berechnung von Diffs zwischen DataStore und Datenbank.</param>
     /// <exception cref="ArgumentNullException">Wird ausgelöst, wenn <paramref name="databasePath"/> null oder leer ist.</exception>
-    public LiteDbPersistenceStrategy(string databasePath, string? collectionName = null)
+    /// <exception cref="ArgumentNullException">Wird ausgelöst, wenn <paramref name="diffService"/> null ist.</exception>
+    public LiteDbPersistenceStrategy(
+        string databasePath, 
+        string? collectionName,
+        IDataStoreDiffService diffService)
     {
         if (string.IsNullOrWhiteSpace(databasePath))
         {
@@ -58,6 +64,7 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
 
         _databasePath = databasePath;
         _collectionName = collectionName ?? typeof(T).Name;
+        _diffService = diffService ?? throw new ArgumentNullException(nameof(diffService));
     }
 
     /// <inheritdoc/>
@@ -128,7 +135,7 @@ public class LiteDbPersistenceStrategy<T> : IPersistenceStrategy<T>
             
             var databaseItems = collection.FindAll().ToList();
 
-            var diff = DataStoreDiffBuilder.ComputeDiff(items, databaseItems);
+            var diff = _diffService.ComputeDiff(items, databaseItems);
 
             if (!diff.HasChanges)
             {

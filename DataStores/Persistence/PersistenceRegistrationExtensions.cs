@@ -84,32 +84,43 @@ public static class PersistenceRegistrationExtensions
     /// <param name="registry">The GlobalStoreRegistry instance.</param>
     /// <param name="databasePath">The full path to the LiteDB database file.</param>
     /// <param name="collectionName">The collection name in the database. If null, uses the type name.</param>
+    /// <param name="diffService">The diff service for computing changes between store and database.</param>
     /// <param name="autoLoad">If true, data is loaded automatically during bootstrap.</param>
     /// <param name="autoSave">If true, changes are saved automatically.</param>
     /// <param name="comparer">Optional equality comparer for items.</param>
     /// <param name="synchronizationContext">Optional SynchronizationContext for events.</param>
     /// <returns>The registry instance for fluent API.</returns>
-    /// <exception cref="ArgumentNullException">Thrown when registry or databasePath is null.</exception>
+    /// <exception cref="ArgumentNullException">Thrown when registry, databasePath, or diffService is null.</exception>
     /// <exception cref="GlobalStoreAlreadyRegisteredException">Thrown when a store for type T is already registered.</exception>
     /// <remarks>
+    /// <para>
+    /// <b>DEPRECATED:</b> Use <see cref="Registration.LiteDbDataStoreBuilder{T}"/> instead for automatic DI-based diff service resolution.
+    /// </para>
+    /// <para>
     /// Use ONLY within <see cref="IDataStoreRegistrar.Register"/> implementations.
+    /// This method requires manual IDataStoreDiffService injection.
+    /// </para>
     /// </remarks>
     /// <example>
     /// <code>
     /// public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
     /// {
+    ///     var diffService = serviceProvider.GetRequiredService&lt;IDataStoreDiffService&gt;();
     ///     registry.RegisterGlobalWithLiteDb&lt;Customer&gt;(
     ///         "C:\\Data\\myapp.db",
     ///         collectionName: "customers",
+    ///         diffService: diffService,
     ///         autoLoad: true,
     ///         autoSave: true);
     /// }
     /// </code>
     /// </example>
+    [Obsolete("Use LiteDbDataStoreBuilder instead for automatic DI-based diff service resolution.")]
     public static IGlobalStoreRegistry RegisterGlobalWithLiteDb<T>(
         this IGlobalStoreRegistry registry,
         string databasePath,
-        string? collectionName = null,
+        string? collectionName,
+        IDataStoreDiffService diffService,
         bool autoLoad = true,
         bool autoSave = true,
         IEqualityComparer<T>? comparer = null,
@@ -125,7 +136,12 @@ public static class PersistenceRegistrationExtensions
             throw new ArgumentNullException(nameof(databasePath));
         }
 
-        var strategy = new LiteDbPersistenceStrategy<T>(databasePath, collectionName);
+        if (diffService == null)
+        {
+            throw new ArgumentNullException(nameof(diffService));
+        }
+
+        var strategy = new LiteDbPersistenceStrategy<T>(databasePath, collectionName, diffService);
         var innerStore = new InMemoryDataStore<T>(comparer, synchronizationContext);
         var persistentStore = new PersistentStoreDecorator<T>(
             innerStore,

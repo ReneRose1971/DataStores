@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using TestHelper.DataStores.Builders;
 using TestHelper.DataStores.Models;
 using TestHelper.DataStores.TestData;
+using TestHelper.DataStores.TestSetup;
 using Xunit;
 
 namespace DataStores.Tests.Integration;
@@ -183,8 +184,8 @@ public class TestDataGeneration_Integration_Tests : IAsyncLifetime
 
         public void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
         {
-            // Manuelle Registrierung mit LiteDbPersistenceStrategy
-            var strategy = new LiteDbPersistenceStrategy<TestEntity>(_dbPath, "testentities");
+            var diffService = TestDiffServiceFactory.Create();
+            var strategy = new LiteDbPersistenceStrategy<TestEntity>(_dbPath, "testentities", diffService);
             var innerStore = new InMemoryDataStore<TestEntity>();
             var persistentStore = new PersistentStoreDecorator<TestEntity>(
                 innerStore,

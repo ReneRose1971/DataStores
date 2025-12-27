@@ -2,6 +2,7 @@ using DataStores.Abstractions;
 using DataStores.Persistence;
 using DataStores.Runtime;
 using TestHelper.DataStores.Models;
+using TestHelper.DataStores.TestSetup;
 using Xunit;
 
 namespace DataStores.Tests.Integration;
@@ -14,6 +15,7 @@ namespace DataStores.Tests.Integration;
 public class LiteDbDataStore_IdHandling_IntegrationTests : IClassFixture<LiteDbDataStore_IdHandling_IntegrationTests.IdHandlingFixture>
 {
     private readonly IdHandlingFixture _fixture;
+    private readonly IDataStoreDiffService _diffService = TestDiffServiceFactory.Create();
 
     public LiteDbDataStore_IdHandling_IntegrationTests(IdHandlingFixture fixture)
     {
@@ -40,7 +42,7 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IClassFixture<LiteDbD
         await Task.Delay(200); // Wait for auto-save
 
         // Assert - IDs wurden von LiteDB vergeben
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities", _diffService);
         var savedEntities = await strategy.LoadAllAsync();
 
         Assert.Equal(2, savedEntities.Count);
@@ -63,7 +65,7 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IClassFixture<LiteDbD
         // Act
         await Task.Delay(200);
         
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities", _diffService);
         var savedEntities = await strategy.LoadAllAsync();
         var ids = savedEntities.Select(e => e.Id).ToList();
 
@@ -72,29 +74,29 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IClassFixture<LiteDbD
     }
 
     [Fact]
-    public async Task EntitiesWithNonZeroId_Should_BeIgnored_DuringSave()
+    public async Task EntitiesWithNonZeroId_NotInDatabase_Should_AlsoBeInserted()
     {
         // Arrange
         var store = _fixture.CreateFreshStore();
 
         var newEntity = new TestEntity { Id = 0, Name = "New Entity", Amount = 100m };
-        var existingEntity = new TestEntity { Id = 999, Name = "Existing Entity", Amount = 200m };
+        var fakeExisting = new TestEntity { Id = 999, Name = "Fake Existing", Amount = 200m };
 
         // Act
         store.Add(newEntity);
-        store.Add(existingEntity);
+        store.Add(fakeExisting);
 
-        Assert.Equal(2, store.Items.Count); // Im Store sind beide
+        Assert.Equal(2, store.Items.Count);
 
         await Task.Delay(200);
 
-        // Assert - Nur neue Entities (Id=0) werden gespeichert
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities");
+        // Assert - BEIDE werden gespeichert, weil beide nicht in DB sind
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities", _diffService);
         var savedEntities = await strategy.LoadAllAsync();
 
-        Assert.Single(savedEntities);
-        Assert.Equal("New Entity", savedEntities[0].Name);
-        Assert.True(savedEntities[0].Id > 0);
+        Assert.Equal(2, savedEntities.Count);
+        Assert.Contains(savedEntities, e => e.Name == "New Entity");
+        Assert.Contains(savedEntities, e => e.Name == "Fake Existing");
     }
 
     [Fact]
@@ -143,7 +145,7 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IClassFixture<LiteDbD
     public async Task AfterLoadFromLiteDb_AllEntities_Should_HavePositiveIds()
     {
         // Arrange - Explizites Save
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities", _diffService);
 
         var entities = new[]
         {
@@ -165,35 +167,35 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IClassFixture<LiteDbD
     }
 
     [Fact]
-    public async Task SaveWithMixedIds_Should_OnlySaveNewEntities()
+    public async Task SaveWithMixedIds_Should_SaveAllNewEntities()
     {
         // Arrange
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities", _diffService);
 
-        var entities = new[]
+        var entities = new []
         {
             new TestEntity { Id = 0, Name = "New 1", Amount = 10m },
-            new TestEntity { Id = 99, Name = "Existing", Amount = 20m },
+            new TestEntity { Id = 99, Name = "Fake Existing", Amount = 20m },
             new TestEntity { Id = 0, Name = "New 2", Amount = 30m }
         };
 
         // Act
         await strategy.SaveAllAsync(entities);
 
-        // Assert - Nur die 2 mit Id = 0
+        // Assert - ALLE 3 werden gespeichert (keine in DB)
         var loaded = await strategy.LoadAllAsync();
-        Assert.Equal(2, loaded.Count);
+        Assert.Equal(3, loaded.Count);
         Assert.All(loaded, e => Assert.True(e.Id > 0));
         Assert.Contains(loaded, e => e.Name == "New 1");
         Assert.Contains(loaded, e => e.Name == "New 2");
-        Assert.DoesNotContain(loaded, e => e.Name == "Existing");
+        Assert.Contains(loaded, e => e.Name == "Fake Existing");
     }
 
     [Fact]
     public async Task IdWriteback_Should_HappenImmediately_AfterSave()
     {
         // Arrange
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities", _diffService);
         var entity = new TestEntity { Id = 0, Name = "Test", Amount = 100m };
         
         Assert.Equal(0, entity.Id); // Precondition
@@ -209,7 +211,7 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IClassFixture<LiteDbD
     public async Task ReloadedEntities_Should_PreserveIds()
     {
         // Arrange
-        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities");
+        var strategy = new LiteDbPersistenceStrategy<TestEntity>(_fixture.DbPath, "entities", _diffService);
         var originalEntity = new TestEntity { Id = 0, Name = "Original", Amount = 100m };
         
         await strategy.SaveAllAsync(new[] { originalEntity });
@@ -235,6 +237,7 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IClassFixture<LiteDbD
     public class IdHandlingFixture : IDisposable
     {
         public string DbPath { get; }
+        private readonly IDataStoreDiffService _diffService = TestDiffServiceFactory.Create();
 
         public IdHandlingFixture()
         {
@@ -243,7 +246,7 @@ public class LiteDbDataStore_IdHandling_IntegrationTests : IClassFixture<LiteDbD
 
         public IDataStore<TestEntity> CreateFreshStore()
         {
-            var strategy = new LiteDbPersistenceStrategy<TestEntity>(DbPath, "entities");
+            var strategy = new LiteDbPersistenceStrategy<TestEntity>(DbPath, "entities", _diffService);
             var innerStore = new InMemoryDataStore<TestEntity>();
             var persistentStore = new PersistentStoreDecorator<TestEntity>(
                 innerStore,

@@ -3,6 +3,7 @@ using DataStores.Bootstrap;
 using DataStores.Registration;
 using DataStores.Runtime;
 using Microsoft.Extensions.DependencyInjection;
+using TestHelper.DataStores.Fakes;
 using TestHelper.DataStores.PathProviders;
 
 namespace DataStores.Tests.Registration;
@@ -26,16 +27,20 @@ public class DataStoreRegistrarBaseTests
         }
     }
 
+    private static IServiceProvider CreateServiceProvider()
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
+        services.AddSingleton<IEqualityComparerService>(new FakeEqualityComparerService());
+        return services.BuildServiceProvider();
+    }
+
     [Fact]
     public void Register_Should_RegisterAllAddedStores()
     {
         var registrar = new SimpleRegistrar();
         var registry = new GlobalStoreRegistry();
-        
-        // Create a service collection with PathProvider
-        var services = new ServiceCollection();
-        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
-        var provider = services.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         registrar.Register(registry, provider);
 
@@ -48,11 +53,7 @@ public class DataStoreRegistrarBaseTests
     {
         var registrar = new MultiStoreRegistrar();
         var registry = new GlobalStoreRegistry();
-        
-        // Create a service collection with PathProvider
-        var services = new ServiceCollection();
-        services.AddSingleton<IDataStorePathProvider>(new NullDataStorePathProvider());
-        var provider = services.BuildServiceProvider();
+        var provider = CreateServiceProvider();
 
         registrar.Register(registry, provider);
 

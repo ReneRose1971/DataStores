@@ -1,6 +1,7 @@
 using DataStores.Abstractions;
 using DataStores.Persistence;
 using DataStores.Runtime;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace DataStores.Registration;
 
@@ -146,7 +147,9 @@ public sealed class LiteDbDataStoreBuilder<T> : DataStoreBuilder<T> where T : En
         SynchronizationContext? synchronizationContext = null)
     {
         if (string.IsNullOrWhiteSpace(databasePath))
+        {
             throw new ArgumentException("Database path cannot be null or empty.", nameof(databasePath));
+        }
 
         _databasePath = databasePath;
         _autoLoad = autoLoad;
@@ -166,13 +169,26 @@ public sealed class LiteDbDataStoreBuilder<T> : DataStoreBuilder<T> where T : En
     /// </para>
     /// <para>
     /// The decorator handles auto-load and auto-save behavior transparently.
+    /// If no explicit comparer was provided, automatically resolves an appropriate comparer via
+    /// <see cref="IEqualityComparerService"/>.
     /// </para>
     /// </remarks>
-    internal override void Register(IGlobalStoreRegistry registry)
+    internal override void Register(IGlobalStoreRegistry registry, IServiceProvider serviceProvider)
     {
+        // Resolve comparer automatically if not explicitly provided
+        var effectiveComparer = Comparer;
+        if (effectiveComparer == null)
+        {
+            var comparerService = serviceProvider.GetRequiredService<IEqualityComparerService>();
+            effectiveComparer = comparerService.GetComparer<T>();
+        }
+
+        // Resolve IDataStoreDiffService for LiteDB strategy
+        var diffService = serviceProvider.GetRequiredService<IDataStoreDiffService>();
+
         var collectionName = typeof(T).Name;
-        var strategy = new LiteDbPersistenceStrategy<T>(_databasePath, collectionName);
-        var innerStore = new InMemoryDataStore<T>(Comparer, SynchronizationContext);
+        var strategy = new LiteDbPersistenceStrategy<T>(_databasePath, collectionName, diffService);
+        var innerStore = new InMemoryDataStore<T>(effectiveComparer, SynchronizationContext);
         var decorator = new PersistentStoreDecorator<T>(innerStore, strategy, _autoLoad, _autoSave);
         registry.RegisterGlobal(decorator);
     }

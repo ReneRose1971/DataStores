@@ -61,7 +61,7 @@ public class InMemoryDataStore_ComparerTests
     }
 
     [Fact]
-    public void Add_WithDuplicatesByComparer_Should_AddBoth()
+    public void Add_WithDuplicatesByComparer_Should_ThrowException()
     {
         // Arrange
         var comparer = new KeySelectorEqualityComparer<TestDto, Guid>(x => x.Id);
@@ -71,10 +71,11 @@ public class InMemoryDataStore_ComparerTests
         
         // Act - Both have same Id according to comparer
         store.Add(new TestDto("A", 20) { Id = sharedId });
-        store.Add(new TestDto("B", 30) { Id = sharedId }); // Comparer sees as duplicate
         
-        // Assert - InMemoryDataStore adds both (doesn't enforce uniqueness)
-        Assert.Equal(2, store.Items.Count);
+        // Assert - NEW BEHAVIOR: Duplicate prevention
+        Assert.Throws<InvalidOperationException>(() => 
+            store.Add(new TestDto("B", 30) { Id = sharedId }));
+        Assert.Single(store.Items); // Only first one added
     }
 
     [Fact]
@@ -84,14 +85,15 @@ public class InMemoryDataStore_ComparerTests
         var comparer = new KeySelectorEqualityComparer<TestDto, string>(x => x.Name);
         var store = new InMemoryDataStore<TestDto>(comparer);
         
+        // Use AddOrReplace to avoid duplicate exceptions
         store.Add(new TestDto("Test", 20));
-        store.Add(new TestDto("Test", 30));
-        store.Add(new TestDto("Test", 40));
+        store.AddOrReplace(new TestDto("Test2", 30)); // Different name
+        store.AddOrReplace(new TestDto("Test3", 40)); // Different name
         
         // Act - Remove by Name="Test"
         var removed = store.Remove(new TestDto("Test", 99));
         
-        // Assert - Only first match removed
+        // Assert - Match removed
         Assert.True(removed);
         Assert.Equal(2, store.Items.Count);
     }
